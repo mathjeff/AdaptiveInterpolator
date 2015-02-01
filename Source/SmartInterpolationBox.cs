@@ -12,7 +12,7 @@ namespace AdaptiveLinearInterpolation
     {
         public SmartInterpolationBox(HyperBox<ScoreType> boundary, INumerifier<ScoreType> scoreHandler)
         {
-            int i;
+            //int i;
             this.scoreHandler = scoreHandler;
             this.currentBoundary = boundary;
             this.observedBoundary = null;

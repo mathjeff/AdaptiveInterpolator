@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -83,41 +83,21 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\Code\AdaptiveInterpolator\AdaptiveLinearInterpolator.cs">
-      <Link>AdaptiveLinearInterpolator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Code\AdaptiveInterpolator\Datapoint.cs">
-      <Link>Datapoint.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Code\AdaptiveInterpolator\DatapointComparer.cs">
-      <Link>DatapointComparer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Code\AdaptiveInterpolator\Distribution.cs">
-      <Link>Distribution.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Code\AdaptiveInterpolator\DistributionAdder.cs">
-      <Link>DistributionAdder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Code\AdaptiveInterpolator\FloatRange.cs">
-      <Link>FloatRange.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Code\AdaptiveInterpolator\HyperBox.cs">
-      <Link>HyperBox.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Code\AdaptiveInterpolator\INumerifier.cs">
-      <Link>INumerifier.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Code\AdaptiveInterpolator\SimpleInterpolationBox.cs">
-      <Link>SimpleInterpolationBox.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Code\AdaptiveInterpolator\SmartInterpolationBox.cs">
-      <Link>SmartInterpolationBox.cs</Link>
-    </Compile>
-    <Compile Include="MedianUtils.cs" />
+    <Compile Include="Source\AdaptiveLinearInterpolator.cs"/>
+    <Compile Include="Source\Datapoint.cs"/>
+    <Compile Include="Source\DatapointComparer.cs"/>
+    <Compile Include="Source\Distribution.cs"/>
+    <Compile Include="Source\DistributionAdder.cs"/>
+    <Compile Include="Source\FloatRange.cs"/>
+    <Compile Include="Source\HyperBox.cs"/>
+    <Compile Include="Source\INumerifier.cs"/>
+    <Compile Include="Source\SimpleInterpolationBox.cs"/>
+    <Compile Include="Source\SmartInterpolationBox.cs"/>
+    <Compile Include="Source\MedianUtils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\..\Interesting\StatList\StatList\Projects\Phone\StatList\StatList.csproj">
+    <ProjectReference Include="..\StatList\StatList.csproj">
       <Project>{7F60DDC6-466F-4D56-AE30-6FD963550BD7}</Project>
       <Name>StatList</Name>
     </ProjectReference>

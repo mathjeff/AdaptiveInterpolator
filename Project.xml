@@ -6,7 +6,7 @@
     <DependencyList>
       <item>
         <name>StatList</name>
-        <version>263dac1e8247de9b018b8944614b035c839896fd</version>
+        <version>2e877061932f8dca1cc24540c0d0404a55ebd411</version>
         <syncher>
           <Git>
             <origin><Url><server>https://github.com</server><path>mathjeff/StatList</path></Url></origin>
