@@ -1,15 +1,21 @@
-<Project>
+
+<Project>  
   <name>AdaptiveInterpolator</name>
   <source><GitRepo/></source>
   <version><GitVersion/></version>
-  <dependencies>
-    <DependencyList>
-      <item>
+  <dependencies>  
+    <DependencyList>  
+      <item>  
         <name>StatList</name>
         <version>2e877061932f8dca1cc24540c0d0404a55ebd411</version>
-        <syncher>
-          <Git>
-            <origin><Url><server>https://github.com</server><path>mathjeff/StatList</path></Url></origin>
+        <syncher>  
+          <Git>  
+            <origin>  
+              <Url>  
+                <server>https://github.com</server>
+                <path>mathjeff/StatList</path>
+              </Url>
+            </origin>
           </Git>
         </syncher>
       </item>
