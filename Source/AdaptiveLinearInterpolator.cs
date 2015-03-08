@@ -19,10 +19,25 @@ namespace AdaptiveLinearInterpolation
             if (newDatapoint.NumInputDimensions != this.root.NumDimensions)
                 throw new ArgumentException("the number of dimensions is incorrect");
             this.root.AddDatapoint(newDatapoint);
+
+            // Inform the root node that it may now be allowed to delegate the intensive analysis to a further descendent
+            this.updateNumExemptSplits();
         }
         public void RemoveDatapoint(IDatapoint<ScoreType> datapoint)
         {
             this.root.RemoveDatapoint(datapoint);
+        }
+        private void updateNumExemptSplits()
+        {
+            // We want this prediction algorithm to run quickly (ideally linear (O(n)) time)
+            // It's also reasonable to split each dimension a little bit, because people shouldn't be adding dimensions that are completely useless, and even if they do, it's ok to double-check
+            // So, for the first few splits that we do (starting at the root), we don't do a long analysis about which dimension to split and we just choose the next dimension
+
+            if (this.root.NumDatapoints > 2)
+            {
+                double numExemptSplits = Math.Log(Math.Log(this.root.NumDatapoints, 2), 2);
+                this.root.ForceSplits(0, (int)numExemptSplits);
+            }
         }
         public Distribution Interpolate(double[] coordinates)
         {
@@ -32,6 +47,7 @@ namespace AdaptiveLinearInterpolation
         {
             if (coordinates.Length != this.root.NumDimensions)
                 throw new ArgumentException("the number of dimensions is incorrect");
+
             // figure out how much room there was to start with
             //double maxInputArea = this.root.GetInputArea();
             int numSplits = 0;

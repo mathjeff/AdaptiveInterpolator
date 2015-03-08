@@ -141,6 +141,8 @@ namespace AdaptiveLinearInterpolation
             foreach (IDatapoint<ScoreType> datapoint in this.pendingDatapoints)
             {
                 this.AddPointNowWithoutSplitting(datapoint);
+                // We don't check all the time about splitting because that takes a long time
+                // We don't wait to the end to check about splitting because that means that adding n points might result in a different split than adding (n-1) points and then adding 1 point
                 if (this.datapoints.Count == splitCount)
                     this.ConsiderSplitting();
             }
@@ -252,7 +254,7 @@ namespace AdaptiveLinearInterpolation
             if (this.datapoints.Count <= 1)
                 return;
             int i, j;
-            if (this.numForcedSplits > 0)
+            if (this.numPreplannedSplits > 0)
             {
                 this.Split(this.splitDimension);
                 return;
@@ -389,11 +391,12 @@ namespace AdaptiveLinearInterpolation
             }
             this.lowerChild = new SmartInterpolationBox<ScoreType>(lowerBoundary, this.scoreHandler);
             this.upperChild = new SmartInterpolationBox<ScoreType>(upperBoundary, this.scoreHandler);
-            // If we've already computed that a particular dimension is worth splitting repeatedly, then inform the children
-            if (this.numForcedSplits > 1)
+            // If we're told that we don't yet have to spend a lot of effort choosing a split dimension, then just ask the children to split the next dimension
+            if (this.numPreplannedSplits > 1)
             {
-                this.lowerChild.ForceSplits(this.splitDimension, this.numForcedSplits - 1);
-                this.upperChild.ForceSplits(this.splitDimension, this.numForcedSplits - 1);
+                int nextSplitDimension = (this.splitDimension + 1) % this.NumDimensions;
+                this.lowerChild.ForceSplits(nextSplitDimension, this.numPreplannedSplits - 1);
+                this.upperChild.ForceSplits(nextSplitDimension, this.numPreplannedSplits - 1);
             }
             this.lowerChild.AddDatapoints(lowerPoints);
             this.upperChild.AddDatapoints(upperPoints);
@@ -439,16 +442,16 @@ namespace AdaptiveLinearInterpolation
             this.totalError = lowerError + difference + upperError;
         }
         */
-        private void ForceSplits(int dimension, int numSplits)
+        public void ForceSplits(int startingDimension, int numSplits)
         {
-            this.splitDimension = dimension;
-            this.numForcedSplits = numSplits;
+            this.splitDimension = startingDimension;
+            this.numPreplannedSplits = numSplits;
         }
 
         private HyperBox<ScoreType> currentBoundary;
         private HyperBox<ScoreType> observedBoundary;
         private int splitDimension;
-        private int numForcedSplits;
+        private int numPreplannedSplits;
         private SmartInterpolationBox<ScoreType> lowerChild;
         private SmartInterpolationBox<ScoreType> upperChild;
         //private SimpleInterpolationBox[] simpleChildren;
