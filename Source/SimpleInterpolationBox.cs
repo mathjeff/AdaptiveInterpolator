@@ -179,8 +179,8 @@ namespace AdaptiveLinearInterpolation
             IDatapoint<ScoreType> previousPoint = this.lowerChild.maxPoint;
             if (nextPoint != null && previousPoint != null)
             {
-                double nextScore = this.scoreHandler.ConvertToDistribution(nextPoint.Score).Mean;
-                double previousScore = this.scoreHandler.ConvertToDistribution(previousPoint.Score).Mean;
+                double nextScore = this.scoreHandler.ConvertToDistribution(nextPoint.Item).Mean;
+                double previousScore = this.scoreHandler.ConvertToDistribution(previousPoint.Item).Mean;
                 difference = Math.Abs(nextScore - previousScore);
                 difference *= difference;
             }

@@ -158,5 +158,20 @@ namespace AdaptiveLinearInterpolation
                 return false;
             }
         }
+
+        public override string ToString()
+        {
+            String result = "";
+            if (this.LowInclusive)
+                result += "[";
+            else
+                result += "(";
+            result += this.LowCoordinate + ", " + this.HighCoordinate;
+            if (this.HighInclusive)
+                result += "]";
+            else
+                result += ")";
+            return result;
+        }
     }
 }

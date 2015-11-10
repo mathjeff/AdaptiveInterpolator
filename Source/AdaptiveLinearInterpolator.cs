@@ -8,13 +8,15 @@ using System.Text;
 // Improving it to a 1st order approximation would be a big improvement because it allows the error to drop much faster
 namespace AdaptiveLinearInterpolation
 {
-    public class AdaptiveLinearInterpolator<ScoreType>
+    public class AdaptiveLinearInterpolator<SummaryType>
     {
-        public AdaptiveLinearInterpolator(HyperBox<ScoreType> inputBoundary, INumerifier<ScoreType> scoreCombiner)
+        // SummaryType is the type of object to put in each box (it's a summary of the datapoints that the box represents)
+        public AdaptiveLinearInterpolator(HyperBox<SummaryType> inputBoundary, INumerifier<SummaryType> itemCombiner)
         {
-            this.root = new SmartInterpolationBox<ScoreType>(inputBoundary, scoreCombiner);
+            this.itemCombiner = itemCombiner;
+            this.root = new SmartInterpolationBox<SummaryType>(inputBoundary, itemCombiner);
         }
-        public void AddDatapoint(IDatapoint<ScoreType> newDatapoint)
+        public void AddDatapoint(IDatapoint<SummaryType> newDatapoint)
         {
             if (newDatapoint.NumInputDimensions != this.root.NumDimensions)
                 throw new ArgumentException("the number of dimensions is incorrect");
@@ -23,7 +25,7 @@ namespace AdaptiveLinearInterpolation
             // Inform the root node that it may now be allowed to delegate the intensive analysis to a further descendent
             this.updateNumExemptSplits();
         }
-        public void RemoveDatapoint(IDatapoint<ScoreType> datapoint)
+        public void RemoveDatapoint(IDatapoint<SummaryType> datapoint)
         {
             this.root.RemoveDatapoint(datapoint);
         }
@@ -41,9 +43,25 @@ namespace AdaptiveLinearInterpolation
         }
         public Distribution Interpolate(double[] coordinates)
         {
-            return this.Interpolate(coordinates, -1);
+            SmartInterpolationBox<SummaryType> box = this.FindNeighborhood(coordinates);
+            Distribution result = this.itemCombiner.ConvertToDistribution(box.ItemSummary);
+            return result;
         }
-        public Distribution Interpolate(double[] coordinates, int maxNumIterations)
+        public IEnumerable<IDatapoint<SummaryType>> JustifyInterpolation(double[] coordinates)
+        {
+            SmartInterpolationBox<SummaryType> box = this.FindNeighborhood(coordinates);
+            return box.Datapoints;
+        }
+        public HyperBox<SummaryType> FindNeighborhoodCoordinates(double[] coordinates)
+        {
+            SmartInterpolationBox<SummaryType> box = this.FindNeighborhood(coordinates);
+            return box.ObservedBoundary;
+        }
+        private SmartInterpolationBox<SummaryType> FindNeighborhood(double[] coordinates)
+        {
+            return this.FindNeighborhood(coordinates, -1);
+        }
+        private SmartInterpolationBox<SummaryType> FindNeighborhood(double[] coordinates, int maxNumIterations)
         {
             if (coordinates.Length != this.root.NumDimensions)
                 throw new ArgumentException("the number of dimensions is incorrect");
@@ -55,28 +73,39 @@ namespace AdaptiveLinearInterpolation
                 numSplits++;
             //double maxInputSpread = this.root.GetInputVariation();
             double maxOutputSpread = this.root.GetScoreSpread();
-            SmartInterpolationBox<ScoreType> currentBox = this.root;
-            SmartInterpolationBox<ScoreType> nextBox;
-            Distribution result = new Distribution();
+            SmartInterpolationBox<SummaryType> currentBox = this.root;
+            SmartInterpolationBox<SummaryType> nextBox;
+            SmartInterpolationBox<SummaryType> result = null;
+            //Distribution result = new Distribution();
             //double inputFraction;
             //double outputFraction;
             //double datapointFraction;
+            result = currentBox;
             while (true)
             {
                 if (!currentBox.ChildrenExist())
                     numSplits++;
                 // decay towards the next component
-                result = result.CopyAndReweightBy(0.5);
-                result = result.Plus(currentBox.Interpolate(coordinates));
+                //result = result.CopyAndReweightBy(0.5);
+                //result = result.Plus(currentBox.Interpolate(coordinates));
                 // consider moving to the child
                 nextBox = currentBox.ChooseChild(coordinates);
                 // figure out whether it's time to stop splitting
                 if (nextBox == null)
                 {
-                    break;
+                    return result;
+                }
+                result = currentBox;
+                if (nextBox.NumDatapoints <= 1)
+                {
+                    return result;
                 }
                 // the more datapoints we have, the more often that we split
                 double nextOutputSpread = nextBox.GetScoreSpread();
+                if (nextOutputSpread <= 0)
+                {
+                    return result;
+                }
                 //double nextInputSpread = nextBox.GetInputVariation();
                 //inputFraction = nextInputSpread / maxInputSpread;
                 //outputFraction = nextOutputSpread / maxOutputSpread;
@@ -87,19 +116,19 @@ namespace AdaptiveLinearInterpolation
                 //if (maxOutputSpread * nextBox.NumDatapoints * nextInputSpread <= maxInputSpread * nextOutputSpread)
                 if (maxOutputSpread * nextBox.NumDatapoints * nextBox.NumDatapoints <= this.root.NumDatapoints * nextOutputSpread)
                 {
-                    // if we finally decided that we could split but didn't want to, then we probably have enough data to simply use the local data
-                    // we don't need to incorporate the points that are further away
-                    result = currentBox.Interpolate(coordinates);
-                    break;
+                    // if we finally decided that we could split but didn't want to, then return the content of this box
+                    return result;
                 }
-                currentBox = nextBox;
 
                 if (numSplits == maxNumIterations)
-                    break;
+                {
+                    // ran out of time; return the content of this box
+                    return result;
+                }
+                currentBox = nextBox;
             }
             // now interpolate using the box of appropriate granularity
             //Distribution result = currentBox.Interpolate(coordinates);
-            return result;
         }
         public int NumDatapoints
         {
@@ -108,8 +137,8 @@ namespace AdaptiveLinearInterpolation
                 return this.root.NumDatapoints;
             }
         }
-        private SmartInterpolationBox<ScoreType> root;
-        //private INumerifier<ScoreType> scoreHandler;
+        private SmartInterpolationBox<SummaryType> root;
+        private INumerifier<SummaryType> itemCombiner;
         //FloatRange outputSpan;
     }
 }
