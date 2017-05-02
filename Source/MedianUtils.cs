@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StatLists;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -174,13 +175,6 @@ namespace AdaptiveInterpolator
                 // Note that if there is an odd number of items then we don't use the last one
             }
             return pairs;
-        }
-    }
-    class DoubleComparer : IComparer<double>
-    {
-        public int Compare(double a, double b)
-        {
-            return a.CompareTo(b);
         }
     }
     class SortNode<T>
