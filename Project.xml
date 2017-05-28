@@ -7,7 +7,7 @@
     <DependencyList>  
       <item>  
         <name>StatList</name>
-        <version>f105d875948a75b0753bc5267199e0f3c78005db</version>
+        <version>afcefcccd8312cb355aa608d87ab2863d8ff3757</version>
         <syncher>  
           <Git>  
             <origin>  
