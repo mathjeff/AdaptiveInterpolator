@@ -47,6 +47,12 @@ namespace AdaptiveLinearInterpolation
             Distribution result = this.itemCombiner.ConvertToDistribution(box.ItemSummary);
             return result;
         }
+        public Distribution GetAverage()
+        {
+            SmartInterpolationBox<SummaryType> box = this.root;
+            Distribution result = this.itemCombiner.ConvertToDistribution(this.root.ItemSummary);
+            return result;
+        }
         public IEnumerable<IDatapoint<SummaryType>> JustifyInterpolation(double[] coordinates)
         {
             SmartInterpolationBox<SummaryType> box = this.FindNeighborhood(coordinates);

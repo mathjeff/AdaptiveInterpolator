@@ -447,7 +447,17 @@ namespace AdaptiveLinearInterpolation
             this.splitDimension = startingDimension;
             this.numPreplannedSplits = numSplits;
         }
-        public SummaryType ItemSummary { get { return itemSummary; } set { itemSummary = value; } }
+        public SummaryType ItemSummary {
+            get
+            {
+                this.ApplyPendingPoints();
+                return itemSummary;
+            }
+            set
+            {
+                itemSummary = value;
+            }
+        }
         public IEnumerable<IDatapoint<SummaryType>> Datapoints { get { return this.datapoints.Concat(this.pendingDatapoints); } }
         public HyperBox<SummaryType> ObservedBoundary { get { return this.observedBoundary; } }
 
