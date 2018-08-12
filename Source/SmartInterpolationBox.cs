@@ -74,17 +74,13 @@ namespace AdaptiveLinearInterpolation
 
             // if this datapoint falls outside our promised boundary, then expand our boundary to include it
             if (this.observedBoundary == null)
-            {
                 this.observedBoundary = new HyperBox<SummaryType>(newDatapoint);
-            }
             else
-            {
                 this.observedBoundary.ExpandToInclude(newDatapoint);
-            }
-            if (!this.currentBoundary.Contains(newDatapoint))
-            {
+            if (this.currentBoundary == null)
+                this.currentBoundary = new HyperBox<SummaryType>(newDatapoint);
+            else
                 this.currentBoundary.ExpandToInclude(newDatapoint);
-            }
             // add it to our set
             //this.datapointsByOutput.Add(newDatapoint, Distribution.MakeDistribution(newDatapoint.Output, 0, 1));
             this.datapoints.AddLast(newDatapoint);

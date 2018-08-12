@@ -14,7 +14,8 @@ namespace AdaptiveLinearInterpolation
             int i;
             for (i = 0; i < coordinates.Length; i++)
             {
-                this.Coordinates[i] = new FloatRange(coordinates[i]);
+                if (coordinates[i] != null)
+                    this.Coordinates[i] = new FloatRange(coordinates[i]);
             }
         }
         public HyperBox(HyperBox<SummaryType> source)
@@ -74,7 +75,10 @@ namespace AdaptiveLinearInterpolation
             int i;
             for (i = 0; i < this.NumDimensions; i++)
             {
-                this.Coordinates[i].ExpandToInclude(newPoint.InputCoordinates[i]);
+                if (this.Coordinates[i] == null)
+                    this.Coordinates[i] = new FloatRange(newPoint.InputCoordinates[i]);
+                else
+                    this.Coordinates[i].ExpandToInclude(newPoint.InputCoordinates[i]);
             }
         }
         public double Area

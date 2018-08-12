@@ -22,6 +22,13 @@ namespace AdaptiveLinearInterpolation
             this.HighCoordinate = source.HighCoordinate;
             this.HighInclusive = source.HighInclusive;
         }
+        public FloatRange(double singlePoint)
+        {
+            this.LowCoordinate = singlePoint;
+            this.LowInclusive = true;
+            this.HighCoordinate = singlePoint;
+            this.HighInclusive = true;
+        }
         public double LowCoordinate { get; set; }
         public bool LowInclusive { get; set; }
         public double HighCoordinate { get; set; }
