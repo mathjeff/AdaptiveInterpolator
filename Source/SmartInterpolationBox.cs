@@ -35,8 +35,6 @@ namespace AdaptiveLinearInterpolation
         public void AddDatapoint(IDatapoint<SummaryType> newDatapoint)
         {
             this.pendingDatapoints.AddLast(newDatapoint);
-            //this.AddPointNowWithoutSplitting(newDatapoint);
-            //this.ConsiderSplitting();
         }
         public bool RemoveDatapoint(IDatapoint<SummaryType> datapoint)
         {
@@ -121,26 +119,31 @@ namespace AdaptiveLinearInterpolation
         // moves any points from the list of pendingPoints into the main list, and updates any stats
         private void ApplyPendingPoints()
         {
-            // Figure out how many points there should be at the final split.
-            // We simulate adding them one at a time, so that the results are the same as if they were added one at a time
-            int count = this.datapoints.Count;
-            int splitCount = this.numPointsAtLastConsideredSplit;
-            foreach (IDatapoint<SummaryType> datapoint in this.pendingDatapoints)
-            {
-                count++;
-                if (this.HasTimeToSplit(count, splitCount))
-                {
-                    splitCount = count;
-                }
-            }
+            int totalNumPoints = this.datapoints.Count + this.pendingDatapoints.Count;
+
             // Now actually add those points and do the split
             foreach (IDatapoint<SummaryType> datapoint in this.pendingDatapoints)
             {
                 this.AddPointNowWithoutSplitting(datapoint);
-                // We don't check all the time about splitting because that takes a long time
-                // We don't wait to the end to check about splitting because that means that adding n points might result in a different split than adding (n-1) points and then adding 1 point
-                if (this.datapoints.Count == splitCount)
-                    this.ConsiderSplitting();
+
+                // We don't check all the time about splitting, because splitting takes a long time
+                // We also don't wait to the end to check about splitting, because that means:
+                //  that this order of calls:
+                //   adding n points
+                //   requesting an interpolation
+                //  might result in a different split than this order of calls:
+                //   adding (n-1) points
+                //   requesting an interpolation
+                //   adding 1 point
+                // So, we preplan how many points are required for the next split
+                if (this.datapoints.Count >= this.numPointsAtNextSplit)
+                {
+                    this.numPointsAtNextSplit = this.RequiredNumPointsToSplit(this.numPointsAtNextSplit);
+                    
+                    // only actually do the split if this is the last planned split
+                    if (this.numPointsAtNextSplit > totalNumPoints)
+                        this.ConsiderSplitting();
+                }
             }
             this.pendingDatapoints.Clear();
         }
@@ -234,19 +237,19 @@ namespace AdaptiveLinearInterpolation
         */
 
         // tells whether it is worth considering a split, given the current number of datapoints and also the number that we had at the last split
-        public bool HasTimeToSplit(int numDatapoints, int previousNumPoints)
+        private int RequiredNumPointsToSplit(int numPointsAtLastConsideredSplit)
         {
-            if (numDatapoints > previousNumPoints * 1.5)
-                return true;
-            return false;
+            int result = (int)((double)numPointsAtLastConsideredSplit * 1.5);
+            if (result <= numPointsAtLastConsideredSplit)
+                result = numPointsAtLastConsideredSplit + 1;
+            return result;
         }
-        public void ConsiderSplitting()
+        private void PermitSplitting()
         {
-            // we only allow have time to split every once in a while
-            if (!this.HasTimeToSplit(this.datapoints.Count, this.numPointsAtLastConsideredSplit))
-                return;
-
-            this.numPointsAtLastConsideredSplit = this.datapoints.Count;
+            this.numPointsAtNextSplit = this.NumDatapoints;
+        }
+        private void ConsiderSplitting()
+        {
             if (this.datapoints.Count <= 1)
                 return;
             int i, j;
@@ -394,8 +397,16 @@ namespace AdaptiveLinearInterpolation
                 this.lowerChild.ForceSplits(nextSplitDimension, this.numPreplannedSplits - 1);
                 this.upperChild.ForceSplits(nextSplitDimension, this.numPreplannedSplits - 1);
             }
+
             this.lowerChild.AddDatapoints(lowerPoints);
+            // this child was constructed all at once using a known size and couldn't have been queried in the meanwhile,
+            // so the child can use all of its points for determining where to split (this won't cause inconsistencies across runs, even as more data gets added)
+            this.lowerChild.PermitSplitting();
+
             this.upperChild.AddDatapoints(upperPoints);
+            // this child was constructed all at once using a known size and couldn't have been queried in the meanwhile,
+            // so the child can use all of its points for determining where to split (this won't cause inconsistencies across runs, even as more data gets added)
+            this.upperChild.PermitSplitting();
 #if false
             this.lowerChild.ApplyPendingPoints();
             this.upperChild.ApplyPendingPoints();
@@ -470,7 +481,7 @@ namespace AdaptiveLinearInterpolation
         //private StatList<Datapoint, Distribution> datapointsByOutput;
         //private StatList<Datapoint, Datapoint> datapointsByInput;
         //private double totalError;
-        private int numPointsAtLastConsideredSplit;
+        private int numPointsAtNextSplit = 1;
 #if MIN_SPLIT_COUNTS
         private int[] minSplitCounts;  // the minimum number of times that dimension[index] was split, over any path through the children
 #endif

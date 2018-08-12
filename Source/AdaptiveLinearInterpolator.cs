@@ -37,8 +37,11 @@ namespace AdaptiveLinearInterpolation
 
             if (this.root.NumDatapoints > 2)
             {
-                double numExemptSplits = Math.Log(Math.Log(this.root.NumDatapoints, 2), 2);
-                this.root.ForceSplits(0, (int)numExemptSplits);
+                double expectedDepth = Math.Log(this.root.NumDatapoints, 2);
+                double numEasySplits = this.root.NumDimensions;
+                double numHardSplits = expectedDepth - numEasySplits;
+                if (numHardSplits > 0)
+                    this.root.ForceSplits(0, (int)(Math.Sqrt(numHardSplits)));
             }
         }
         public Distribution Interpolate(double[] coordinates)
@@ -112,15 +115,8 @@ namespace AdaptiveLinearInterpolation
                 {
                     return result;
                 }
-                //double nextInputSpread = nextBox.GetInputVariation();
-                //inputFraction = nextInputSpread / maxInputSpread;
-                //outputFraction = nextOutputSpread / maxOutputSpread;
-                //datapointFraction = (double)nextBox.NumDatapoints / (double)this.root.NumDatapoints;
 
-                //if (maxOutputSpread * maxOutputSpread * nextBox.NumDatapoints * nextBox.NumDatapoints * nextInputSpread <= this.root.NumDatapoints * maxInputSpread * nextOutputSpread * nextOutputSpread)
-                //if ((inputFraction + datapointFraction) * nextBox.NumDatapoints <= outputFraction)
-                //if (maxOutputSpread * nextBox.NumDatapoints * nextInputSpread <= maxInputSpread * nextOutputSpread)
-                if (maxOutputSpread * nextBox.NumDatapoints * nextBox.NumDatapoints <= this.root.NumDatapoints * nextOutputSpread)
+                if (maxOutputSpread * nextBox.NumDatapoints * nextBox.NumDatapoints <= this.root.NumDatapoints * nextOutputSpread * 4)
                 {
                     // if we finally decided that we could split but didn't want to, then return the content of this box
                     return result;

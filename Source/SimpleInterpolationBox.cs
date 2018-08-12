@@ -190,7 +190,7 @@ namespace AdaptiveLinearInterpolation
             }
             this.totalError = lowerError + difference + upperError;
 
-            this.depth = Math.Min(this.lowerChild.depth, this.upperChild.depth) + 1;
+            this.depth = Math.Max(this.lowerChild.depth, this.upperChild.depth) + 1;
         }
         public int NumDimensions
         {
