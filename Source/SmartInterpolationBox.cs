@@ -10,7 +10,7 @@ namespace AdaptiveLinearInterpolation
 {
     class SmartInterpolationBox<SummaryType> // : IComparer<Datapoint>, ICombiner<Datapoint>
     {
-        public SmartInterpolationBox(HyperBox<SummaryType> boundary, INumerifier<SummaryType> scoreHandler)
+        public SmartInterpolationBox(HyperBox<SummaryType> boundary, INumerifier<SummaryType> scoreHandler, int depthFromRoot = 0)
         {
             //int i;
             this.scoreHandler = scoreHandler;
@@ -20,6 +20,7 @@ namespace AdaptiveLinearInterpolation
             this.datapoints = new LinkedList<IDatapoint<SummaryType>>();
             this.pendingDatapoints = new LinkedList<IDatapoint<SummaryType>>();
             this.itemSummary = scoreHandler.Default();
+            this.depthFromRoot = depthFromRoot;
 #if MIN_SPLIT_COUNTS
             this.minSplitCounts = new int[boundary.NumDimensions];
 #endif
@@ -239,7 +240,12 @@ namespace AdaptiveLinearInterpolation
         // tells whether it is worth considering a split, given the current number of datapoints and also the number that we had at the last split
         private int RequiredNumPointsToSplit(int numPointsAtLastConsideredSplit)
         {
-            int result = (int)((double)numPointsAtLastConsideredSplit * 1.5);
+            // The reason we decrease the splitting frequency as our ancestry increases is to avoid redudant splits that are going to get thrown out soon.
+            // If our parent uses the same split factor as us and is receiving random inputs, then our parent is expected to want to split at about the same time we do, or maybe slightly later.
+            // If our parent splits slightly after us, then that means we did a bunch of effort splitting that soon became irrelevant.
+            // So, we put our split threshold such that it should be slightly after our parent is expected to split.
+            // Our split threshold is mostly only intended to trigger if lots of points are getting concentrated specifically into this box.
+            int result = (int)((double)numPointsAtLastConsideredSplit * ((double)this.depthFromRoot + 1.5));
             if (result <= numPointsAtLastConsideredSplit)
                 result = numPointsAtLastConsideredSplit + 1;
             return result;
@@ -388,8 +394,8 @@ namespace AdaptiveLinearInterpolation
                 if (upperBoundary.Contains(datapoint))
                     upperPoints.AddLast(datapoint);
             }
-            this.lowerChild = new SmartInterpolationBox<SummaryType>(lowerBoundary, this.scoreHandler);
-            this.upperChild = new SmartInterpolationBox<SummaryType>(upperBoundary, this.scoreHandler);
+            this.lowerChild = new SmartInterpolationBox<SummaryType>(lowerBoundary, this.scoreHandler, this.depthFromRoot + 1);
+            this.upperChild = new SmartInterpolationBox<SummaryType>(upperBoundary, this.scoreHandler, this.depthFromRoot + 1);
             // If we're told that we don't yet have to spend a lot of effort choosing a split dimension, then just ask the children to split the next dimension
             if (this.numPreplannedSplits > 1)
             {
@@ -482,6 +488,7 @@ namespace AdaptiveLinearInterpolation
         //private StatList<Datapoint, Datapoint> datapointsByInput;
         //private double totalError;
         private int numPointsAtNextSplit = 1;
+        private int depthFromRoot;
 #if MIN_SPLIT_COUNTS
         private int[] minSplitCounts;  // the minimum number of times that dimension[index] was split, over any path through the children
 #endif

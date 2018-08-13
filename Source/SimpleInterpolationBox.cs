@@ -22,7 +22,7 @@ namespace AdaptiveLinearInterpolation
             this.dimensionToSort = dimToSort;
             this.numDatapoints = 0;
             this.splitDimension = dimensionSplitOrder.First.Value;
-            this.depth = 0;
+            this.depthFromLeaves = 0;
             //this.splitDimension_inputs = new Distribution();
 
         }
@@ -168,7 +168,7 @@ namespace AdaptiveLinearInterpolation
         {
             if (this.lowerChild == null || this.upperChild == null)
             {
-                this.depth = 0;
+                this.depthFromLeaves = 0;
                 this.totalError = 0;
                 return;
             }
@@ -190,7 +190,7 @@ namespace AdaptiveLinearInterpolation
             }
             this.totalError = lowerError + difference + upperError;
 
-            this.depth = Math.Max(this.lowerChild.depth, this.upperChild.depth) + 1;
+            this.depthFromLeaves = Math.Max(this.lowerChild.depthFromLeaves, this.upperChild.depthFromLeaves) + 1;
         }
         public int NumDimensions
         {
@@ -203,7 +203,7 @@ namespace AdaptiveLinearInterpolation
         {
             get
             {
-                return this.depth;
+                return this.depthFromLeaves;
             }
         }
         #region Functions for ICombiner<IDatapoint>
@@ -230,7 +230,7 @@ namespace AdaptiveLinearInterpolation
         private SimpleInterpolationBox<ScoreType> upperChild;
         private double totalError;
         private int dimensionToSort;
-        private int depth;
+        private int depthFromLeaves;
         private INumerifier<ScoreType> scoreHandler;
         //private Distribution splitDimension_inputs;
     }
