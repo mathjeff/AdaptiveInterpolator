@@ -101,5 +101,17 @@ namespace AdaptiveLinearInterpolation
                 return this.Coordinates.Length;
             }
         }
+        public double[] Middle
+        {
+            get
+            {
+                double[] result = new double[this.Coordinates.Length];
+                for (int i = 0; i < this.Coordinates.Length; i++)
+                {
+                    result[i] = this.Coordinates[i].Middle;
+                }
+                return result;
+            }
+        }
     }
 }

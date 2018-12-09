@@ -264,14 +264,13 @@ namespace AdaptiveLinearInterpolation
                 this.Split(this.splitDimension);
                 return;
             }
-            // if all subchild trees agree that it's good to split the current dimension, then we don't need to bother
-            /*if (this.splitDimension >= 0)
+            if (this.NumDimensions == 1)
             {
-                if (this.minSplitCounts[this.splitDimension] >= 2)
-                {
-                    return;
-                }
-            }*/
+                // If there's only one dimension, it has to be the one to split
+                if (this.observedBoundary.Coordinates[0].Width > 0)
+                    this.Split(0);
+                return;
+            }
             // setup a bunch of SimpleInterpolationBox to calculate the error we'd get if we couldn't split any particular dimension
             // setup the simple children
             SimpleInterpolationBox<SummaryType>[] simpleChildren = new SimpleInterpolationBox<SummaryType>[this.NumDimensions];
@@ -293,25 +292,13 @@ namespace AdaptiveLinearInterpolation
 
             double bestError = -1;
             int dimension = -1;
-            /*
-            // if there are children already, then we only split a different dimension if we could do substantially better
-            if (this.splitDimension >= 0)
-            {
-                // apply a bonus to the current error, so we don't flip-flop too often
-                bestError = simpleChildren[this.splitDimension].GetError() * 2;
-                dimension = this.splitDimension;
-            }*/
 
             // identify the dimension such that if we cannot split that dimension, then we get the most error
             for (i = 0; i < this.NumDimensions; i++)
             {
                 if (this.observedBoundary.Coordinates[i].Width > 0)
                 {
-#if true
                     double currentError = simpleChildren[i].GetError();
-#else
-                    double currentError = this.observedBoundary.Coordinates[i].Width;
-#endif
                     if (currentError > bestError)
                     {
                         bestError = currentError;
@@ -339,17 +326,6 @@ namespace AdaptiveLinearInterpolation
                     }
                 }
             }
-            else
-            {
-                // we found a dimension that's worth splitting, so let's split it a few times rather than recomputing similar information again
-                //this.ForceSplits(dimension, simpleChildren[dimension].Depth / this.NumDimensions + 1);
-            }
-            /*
-            if (dimension != this.splitDimension)
-            {
-                this.Split(dimension);
-            }
-            */
             this.Split(dimension);
         }
         public void Split(int dimension)
@@ -367,8 +343,17 @@ namespace AdaptiveLinearInterpolation
                 inputs.AddLast(datapoint.InputCoordinates[dimension]);
             }
             double splitValue = MedianUtils.EstimateMedian(inputs);
-            if (splitValue == this.currentBoundary.Coordinates[dimension].HighCoordinate || splitValue == this.currentBoundary.Coordinates[dimension].LowCoordinate)
-                splitValue = (this.currentBoundary.Coordinates[dimension].LowCoordinate + this.currentBoundary.Coordinates[dimension].HighCoordinate) / 2;
+            // check for the possibility that MedianUtils was unlucky and found something on the edge of observedBoundary
+            if (splitValue >= this.observedBoundary.Coordinates[dimension].HighCoordinate || splitValue <= this.observedBoundary.Coordinates[dimension].LowCoordinate)
+            {
+                splitValue = (this.observedBoundary.Coordinates[dimension].LowCoordinate + this.observedBoundary.Coordinates[dimension].HighCoordinate) / 2;
+                // check for the possibility that rounding error is preventing a split
+                if (splitValue >= this.observedBoundary.Coordinates[dimension].HighCoordinate || splitValue <= this.observedBoundary.Coordinates[dimension].LowCoordinate)
+                {
+                    this.lowerChild = this.upperChild = null;
+                    return;
+                }
+            }
 #else
             double splitValue = (this.observedBoundary.Coordinates[dimension].LowCoordinate + this.observedBoundary.Coordinates[dimension].HighCoordinate) / 2;
             if (splitValue == this.currentBoundary.Coordinates[dimension].HighCoordinate || splitValue == this.currentBoundary.Coordinates[dimension].LowCoordinate)
@@ -433,34 +418,13 @@ namespace AdaptiveLinearInterpolation
                 this.minSplitCounts[this.splitDimension]++;
         }
 #endif
-        /*
-        public double GetError()
-        {
-            double result = this.totalError / this.datapointsByOutput.NumItems;
-            return result;
-        }
-        public void UpdateError()
-        {
-            if (this.lowerChild == null || this.upperChild == null)
-            {
-                this.totalError = 0;
-                return;
-            }
-
-            double lowerError = this.lowerChild.totalError;
-            double upperError = this.upperChild.totalError;
-            double nextOutput = this.upperChild.datapointsByInput.GetFirstValue().Value.Output;
-            double previousOutput = this.lowerChild.datapointsByInput.GetLastValue().Value.Output;
-            double difference = Math.Abs(nextOutput - previousOutput);
-            this.totalError = lowerError + difference + upperError;
-        }
-        */
         public void ForceSplits(int startingDimension, int numSplits)
         {
             this.splitDimension = startingDimension;
             this.numPreplannedSplits = numSplits;
         }
-        public SummaryType ItemSummary {
+        public SummaryType ItemSummary
+        {
             get
             {
                 this.ApplyPendingPoints();
@@ -473,6 +437,20 @@ namespace AdaptiveLinearInterpolation
         }
         public IEnumerable<IDatapoint<SummaryType>> Datapoints { get { return this.datapoints.Concat(this.pendingDatapoints); } }
         public HyperBox<SummaryType> ObservedBoundary { get { return this.observedBoundary; } }
+        public SmartInterpolationBox<SummaryType> UpperChild
+        {
+            get
+            {
+                return this.upperChild;
+            }
+        } 
+        public SmartInterpolationBox<SummaryType> LowerChild
+        {
+            get
+            {
+                return this.lowerChild;
+            }
+        }
 
         private HyperBox<SummaryType> currentBoundary;
         private HyperBox<SummaryType> observedBoundary;
