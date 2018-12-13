@@ -259,10 +259,18 @@ namespace AdaptiveLinearInterpolation
             if (this.datapoints.Count <= 1)
                 return;
             int i, j;
-            if (this.numPreplannedSplits > 0)
+            while (this.numPreplannedSplits > 0)
             {
-                this.Split(this.splitDimension);
-                return;
+                if (this.observedBoundary.Coordinates[this.splitDimension].Width > 0)
+                {
+                    this.Split(this.splitDimension);
+                    return;
+                }
+                else
+                {
+                    this.splitDimension = (this.splitDimension + 1) % this.NumDimensions;
+                    this.numPreplannedSplits--;
+                }
             }
             if (this.NumDimensions == 1)
             {
@@ -278,12 +286,9 @@ namespace AdaptiveLinearInterpolation
             {
                 // tell it to split each dimension in order, except for one
                 LinkedList<int> dimensionsToSplit = new LinkedList<int>();
-                for (j = 0; j < this.NumDimensions; j++)
+                for (j = (i + 1) % this.NumDimensions; j != i; j = (j + 1) % this.NumDimensions)
                 {
-                    if (j != i)
-                    {
-                        dimensionsToSplit.AddLast(j);
-                    }
+                    dimensionsToSplit.AddLast(j);
                 }
                 SimpleInterpolationBox<SummaryType> box = new SimpleInterpolationBox<SummaryType>(this.currentBoundary, dimensionsToSplit, i, this.scoreHandler);
                 box.AddDatapoints(this.datapoints);
