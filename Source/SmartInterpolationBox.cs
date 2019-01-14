@@ -205,10 +205,6 @@ namespace AdaptiveLinearInterpolation
             this.ApplyPendingPoints();
             if (this.lowerChild == null)
                 return null;
-            if (this.lowerChild.currentBoundary.Contains(coordinates))
-                return this.lowerChild;
-            if (this.upperChild.currentBoundary.Contains(coordinates))
-                return this.upperChild;
             if (this.lowerChild.currentBoundary.Coordinates[this.splitDimension].HighCoordinate < coordinates[this.splitDimension])
                 return this.upperChild;
             else
