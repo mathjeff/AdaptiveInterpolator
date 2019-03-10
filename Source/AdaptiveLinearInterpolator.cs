@@ -52,8 +52,11 @@ namespace AdaptiveLinearInterpolation
         }
         public Distribution GetAverage()
         {
+            DateTime start = DateTime.Now;
             SmartInterpolationBox<SummaryType> box = this.root;
             Distribution result = this.itemCombiner.ConvertToDistribution(this.root.ItemSummary);
+            DateTime end = DateTime.Now;
+            System.Diagnostics.Debug.WriteLine("Spent " + end.Subtract(start) + " getting average of interpolation box");
             return result;
         }
         public IEnumerable<IDatapoint<SummaryType>> JustifyInterpolation(double[] coordinates)
