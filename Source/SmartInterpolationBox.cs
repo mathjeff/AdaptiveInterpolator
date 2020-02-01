@@ -17,8 +17,8 @@ namespace AdaptiveLinearInterpolation
             this.currentBoundary = boundary;
             this.observedBoundary = null;
             this.splitDimension = -1;
-            this.datapoints = new LinkedList<IDatapoint<SummaryType>>();
-            this.pendingDatapoints = new LinkedList<IDatapoint<SummaryType>>();
+            this.datapoints = new List<IDatapoint<SummaryType>>();
+            this.pendingDatapoints = new List<IDatapoint<SummaryType>>();
             this.itemSummary = scoreHandler.Default();
             this.depthFromRoot = depthFromRoot;
 #if MIN_SPLIT_COUNTS
@@ -35,7 +35,7 @@ namespace AdaptiveLinearInterpolation
         // adds a datapoint
         public void AddDatapoint(IDatapoint<SummaryType> newDatapoint)
         {
-            this.pendingDatapoints.AddLast(newDatapoint);
+            this.pendingDatapoints.Add(newDatapoint);
         }
         public bool RemoveDatapoint(IDatapoint<SummaryType> datapoint)
         {
@@ -82,7 +82,7 @@ namespace AdaptiveLinearInterpolation
                 this.currentBoundary.ExpandToInclude(newDatapoint);
             // add it to our set
             //this.datapointsByOutput.Add(newDatapoint, Distribution.MakeDistribution(newDatapoint.Output, 0, 1));
-            this.datapoints.AddLast(newDatapoint);
+            this.datapoints.Add(newDatapoint);
             //if (this.datapointsByInput != null)
             //    this.datapointsByInput.Add(newDatapoint, newDatapoint);
             /*
@@ -281,10 +281,10 @@ namespace AdaptiveLinearInterpolation
             for (i = 0; i < simpleChildren.Length; i++)
             {
                 // tell it to split each dimension in order, except for one
-                LinkedList<int> dimensionsToSplit = new LinkedList<int>();
+                List<int> dimensionsToSplit = new List<int>(this.NumDimensions - 1);
                 for (j = (i + 1) % this.NumDimensions; j != i; j = (j + 1) % this.NumDimensions)
                 {
-                    dimensionsToSplit.AddLast(j);
+                    dimensionsToSplit.Add(j);
                 }
                 SimpleInterpolationBox<SummaryType> box = new SimpleInterpolationBox<SummaryType>(this.currentBoundary, dimensionsToSplit, i, this.scoreHandler);
                 box.AddDatapoints(this.datapoints);
@@ -338,10 +338,10 @@ namespace AdaptiveLinearInterpolation
 
             // compute the coordinates of each child
 #if true
-            LinkedList<double> inputs = new LinkedList<double>();
+            List<double> inputs = new List<double>(this.datapoints.Count);
             foreach (IDatapoint<SummaryType> datapoint in this.datapoints)
             {
-                inputs.AddLast(datapoint.InputCoordinates[dimension]);
+                inputs.Add(datapoint.InputCoordinates[dimension]);
             }
             double splitValue = MedianUtils.EstimateMedian(inputs);
             // check for the possibility that MedianUtils was unlucky and found something on the edge of observedBoundary
@@ -371,14 +371,14 @@ namespace AdaptiveLinearInterpolation
             //    upperBoundary = upperBoundary;
 
             // decide which data goes in which child
-            LinkedList<IDatapoint<SummaryType>> lowerPoints = new LinkedList<IDatapoint<SummaryType>>();
-            LinkedList<IDatapoint<SummaryType>> upperPoints = new LinkedList<IDatapoint<SummaryType>>();
+            List<IDatapoint<SummaryType>> lowerPoints = new List<IDatapoint<SummaryType>>(this.datapoints.Count / 2);
+            List<IDatapoint<SummaryType>> upperPoints = new List<IDatapoint<SummaryType>>(this.datapoints.Count / 2);
             foreach (IDatapoint<SummaryType> datapoint in this.datapoints)
             {
                 if (lowerBoundary.Contains(datapoint))
-                    lowerPoints.AddLast(datapoint);
+                    lowerPoints.Add(datapoint);
                 if (upperBoundary.Contains(datapoint))
-                    upperPoints.AddLast(datapoint);
+                    upperPoints.Add(datapoint);
             }
             this.lowerChild = new SmartInterpolationBox<SummaryType>(lowerBoundary, this.scoreHandler, this.depthFromRoot + 1);
             this.upperChild = new SmartInterpolationBox<SummaryType>(upperBoundary, this.scoreHandler, this.depthFromRoot + 1);
@@ -461,8 +461,8 @@ namespace AdaptiveLinearInterpolation
         private SmartInterpolationBox<SummaryType> upperChild;
         //private SimpleInterpolationBox[] simpleChildren;
         private SummaryType itemSummary;
-        private LinkedList<IDatapoint<SummaryType>> datapoints;
-        private LinkedList<IDatapoint<SummaryType>> pendingDatapoints;    // any points that are waiting in a queue to be added. Their values aren't included in anything yet
+        private List<IDatapoint<SummaryType>> datapoints;
+        private List<IDatapoint<SummaryType>> pendingDatapoints;    // any points that are waiting in a queue to be added. Their values aren't included in anything yet
         //private StatList<Datapoint, Distribution> datapointsByOutput;
         //private StatList<Datapoint, Datapoint> datapointsByInput;
         //private double totalError;

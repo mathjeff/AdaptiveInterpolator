@@ -68,7 +68,7 @@ namespace AdaptiveInterpolator
         {
             // split into sets of two points
             IEnumerable<SortNodePair<T>> currentPairs = PairOff(items, comparer);
-            LinkedList<SortNodePair<T>> nextPairs = new LinkedList<SortNodePair<T>>();
+            List<SortNodePair<T>> nextPairs = new List<SortNodePair<T>>(currentPairs.Count() / 2);
             // find some pretty good bounds on the median
             while (currentPairs.Count() > 1)
             {
@@ -132,7 +132,7 @@ namespace AdaptiveInterpolator
                             new_highMiddle.NumEqualItems += highestItem.NumEqualItems;
                         
 
-                        nextPairs.AddLast(new SortNodePair<T>(new_lowMiddle, new_highMiddle));
+                        nextPairs.Add(new SortNodePair<T>(new_lowMiddle, new_highMiddle));
 
                         previousPair = null;
                     }
@@ -142,13 +142,13 @@ namespace AdaptiveInterpolator
                 //    nextPairs.AddFirst(previousPair);
 
                 currentPairs = nextPairs;
-                nextPairs = new LinkedList<SortNodePair<T>>();
+                nextPairs = new List<SortNodePair<T>>(currentPairs.Count() / 2);
             }
             return currentPairs.First();
         }
         public static IEnumerable<SortNodePair<T>> PairOff<T>(IEnumerable<T> items, IComparer<T> comparer)
         {
-            LinkedList<SortNodePair<T>> pairs = new LinkedList<SortNodePair<T>>();
+            List<SortNodePair<T>> pairs = new List<SortNodePair<T>>(items.Count() / 2);
             SortNode<T> previousNode = null;
             foreach (T currentItem in items)
             {
@@ -163,12 +163,12 @@ namespace AdaptiveInterpolator
                     if (comparison >= 0)
                     {
                         //previousNode.NumLowerItems = currentNode.NumHigherItems = 1;
-                        pairs.AddLast(new SortNodePair<T>(currentNode, previousNode));
+                        pairs.Add(new SortNodePair<T>(currentNode, previousNode));
                     }
                     else
                     {
                         //previousNode.NumHigherItems = currentNode.NumLowerItems = 1;
-                        pairs.AddLast(new SortNodePair<T>(previousNode, currentNode));
+                        pairs.Add(new SortNodePair<T>(previousNode, currentNode));
                     }
                     previousNode = null;
                 }

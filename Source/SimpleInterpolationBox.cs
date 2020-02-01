@@ -11,17 +11,17 @@ namespace AdaptiveLinearInterpolation
     class SimpleInterpolationBox<ScoreType> : ICombiner<IDatapoint<ScoreType>>
     {
 
-        public SimpleInterpolationBox(HyperBox<ScoreType> boundary, LinkedList<int> dimensionSplitOrder, int dimToSort, INumerifier<ScoreType> scoreHandler)
+        public SimpleInterpolationBox(HyperBox<ScoreType> boundary, List<int> dimensionSplitOrder, int dimToSort, INumerifier<ScoreType> scoreHandler)
         {
             this.scoreHandler = scoreHandler;
             this.currentBoundary = boundary;
             this.observedBoundary = null;
             this.dimensionsToSplit = dimensionSplitOrder;
             //this.datapointsByInput = new StatList<Datapoint, Datapoint>(new DatapointComparer(dimToSort), this);
-            this.unpropogatedDatapoints = new LinkedList<IDatapoint<ScoreType>>();
+            this.unpropogatedDatapoints = new List<IDatapoint<ScoreType>>(0);
             this.dimensionToSort = dimToSort;
             this.numDatapoints = 0;
-            this.splitDimension = dimensionSplitOrder.First.Value;
+            this.splitDimension = dimensionSplitOrder.First();
             this.depthFromLeaves = 0;
             //this.splitDimension_inputs = new Distribution();
 
@@ -62,20 +62,23 @@ namespace AdaptiveLinearInterpolation
             if (this.lowerChild == null && this.upperChild == null)
             {
                 // considering subdividing into more boxes
-                this.unpropogatedDatapoints = this.unpropogatedDatapoints.Concat(newDatapoints);
+                if (this.unpropogatedDatapoints.Count() < 1)
+                    this.unpropogatedDatapoints = newDatapoints;
+                else
+                    this.unpropogatedDatapoints = this.unpropogatedDatapoints.Concat(newDatapoints);
                 this.ConsiderSplitting();
             }
             else
             {
                 // add these points to the existing child boxes
-                LinkedList<IDatapoint<ScoreType>> lowerPoints = new LinkedList<IDatapoint<ScoreType>>();
-                LinkedList<IDatapoint<ScoreType>> upperPoints = new LinkedList<IDatapoint<ScoreType>>();
+                List<IDatapoint<ScoreType>> lowerPoints = new List<IDatapoint<ScoreType>>(newDatapoints.Count() / 2);
+                List<IDatapoint<ScoreType>> upperPoints = new List<IDatapoint<ScoreType>>(newDatapoints.Count() / 2);
                 foreach (IDatapoint<ScoreType> newDatapoint in newDatapoints)
                 {
                     if (this.lowerChild.currentBoundary.Contains(newDatapoint))
-                        lowerPoints.AddLast(newDatapoint);
+                        lowerPoints.Add(newDatapoint);
                     if (this.upperChild.currentBoundary.Contains(newDatapoint))
-                        upperPoints.AddLast(newDatapoint);
+                        upperPoints.Add(newDatapoint);
                 }
                 this.lowerChild.AddDatapoints(lowerPoints);
                 this.upperChild.AddDatapoints(upperPoints);
@@ -99,10 +102,10 @@ namespace AdaptiveLinearInterpolation
 
             // compute the coordinates of each child
 #if true
-            LinkedList<double> inputs = new LinkedList<double>();
+            List<double> inputs = new List<double>(this.unpropogatedDatapoints.Count());
             foreach (IDatapoint<ScoreType> datapoint in this.unpropogatedDatapoints)
             {
-                inputs.AddLast(datapoint.InputCoordinates[dimension]);
+                inputs.Add(datapoint.InputCoordinates[dimension]);
             }
             double splitValue = MedianUtils.EstimateMedian(inputs);
             if (splitValue == this.currentBoundary.Coordinates[dimension].HighCoordinate || splitValue == this.currentBoundary.Coordinates[dimension].LowCoordinate)
@@ -120,35 +123,35 @@ namespace AdaptiveLinearInterpolation
             upperBoundary.Coordinates[dimension].LowCoordinate = splitValue;
             upperBoundary.Coordinates[dimension].LowInclusive = false;
             // determine the split order for the children
-            LinkedList<int> childSplitOrder = new LinkedList<int>(this.dimensionsToSplit);
-            childSplitOrder.RemoveFirst();
-            childSplitOrder.AddLast(dimension);
+            List<int> childSplitOrder = new List<int>(this.dimensionsToSplit);
+            childSplitOrder.RemoveAt(0);
+            childSplitOrder.Add(dimension);
 
             // fill data into the children
             this.lowerChild = new SimpleInterpolationBox<ScoreType>(lowerBoundary, childSplitOrder, this.dimensionToSort, this.scoreHandler);
             this.upperChild = new SimpleInterpolationBox<ScoreType>(upperBoundary, childSplitOrder, this.dimensionToSort, this.scoreHandler);
-            LinkedList<IDatapoint<ScoreType>> lowerPoints = new LinkedList<IDatapoint<ScoreType>>();
-            LinkedList<IDatapoint<ScoreType>> upperPoints = new LinkedList<IDatapoint<ScoreType>>();
             // skip half of the datapoints because it saves a lot of time (the skipping compounds in grandchildren etc) and shouldn't make much difference in our decision of which dim to split
 #if false
             int desiredNumPointsPerChild = this.unpropogatedDatapoints.Count();
 #else
             int desiredNumPointsPerChild = this.unpropogatedDatapoints.Count() / 4;
 #endif
+            List<IDatapoint<ScoreType>> lowerPoints = new List<IDatapoint<ScoreType>>(desiredNumPointsPerChild);
+            List<IDatapoint<ScoreType>> upperPoints = new List<IDatapoint<ScoreType>>(desiredNumPointsPerChild);
             foreach (IDatapoint<ScoreType> newDatapoint in this.unpropogatedDatapoints)
             {
                 if (newDatapoint.InputCoordinates[dimension] >= splitValue)
                 {
                     if (upperPoints.Count < desiredNumPointsPerChild)
-                        upperPoints.AddLast(newDatapoint);
+                        upperPoints.Add(newDatapoint);
                 }
                 else
                 {
                     if (lowerPoints.Count < desiredNumPointsPerChild)
-                        lowerPoints.AddLast(newDatapoint);
+                        lowerPoints.Add(newDatapoint);
                 }
             }
-            this.unpropogatedDatapoints = new LinkedList<IDatapoint<ScoreType>>();
+            this.unpropogatedDatapoints = new List<IDatapoint<ScoreType>>(0);
             this.lowerChild.AddDatapoints(lowerPoints);
             this.upperChild.AddDatapoints(upperPoints);
         }
@@ -222,7 +225,7 @@ namespace AdaptiveLinearInterpolation
         int numDatapoints;
         IDatapoint<ScoreType> minPoint;
         IDatapoint<ScoreType> maxPoint;
-        private LinkedList<int> dimensionsToSplit;
+        private List<int> dimensionsToSplit;
         private int splitDimension;
         private HyperBox<ScoreType> currentBoundary;
         private HyperBox<ScoreType> observedBoundary;
