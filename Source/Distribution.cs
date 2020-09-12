@@ -63,10 +63,6 @@ namespace AdaptiveLinearInterpolation
             {
                 return this.sumWeight;
             }
-            set
-            {
-                this.sumWeight = value;
-            }
         }
         public Distribution Plus(Distribution other)
         {
