@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 
 // an INumerifier needs to provide functions to convert a certain data type to a double, and to be able to add them
-namespace AdaptiveLinearInterpolation
+namespace AdaptiveInterpolation
 {
     public interface INumerifier<ValueType>
     {

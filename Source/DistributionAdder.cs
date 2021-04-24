@@ -5,7 +5,7 @@ using System.Text;
 using StatLists;
 
 // The DistributionAdder class adds and subtracts distributions, to allow for use in Generics
-namespace AdaptiveLinearInterpolation
+namespace AdaptiveInterpolation
 {
     class DistributionAdder : ICombiner<Distribution>
     {

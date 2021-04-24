@@ -6,7 +6,7 @@ using StatLists;
 using AdaptiveInterpolator;
 
 // the SmartInterpolationBox will figure out which dimensions are worth splitting and when
-namespace AdaptiveLinearInterpolation
+namespace AdaptiveInterpolation
 {
     class SmartInterpolationBox<SummaryType> // : IComparer<Datapoint>, ICombiner<Datapoint>
     {
@@ -109,13 +109,6 @@ namespace AdaptiveLinearInterpolation
             {
                 this.AddDatapoint(newDatapoint);
             }
-        }
-        public Distribution Interpolate(double[] location)
-        {
-            this.ApplyPendingPoints();
-            // finally, return the 
-            return this.scoreHandler.ConvertToDistribution(this.itemSummary);
-            //return this.scores;
         }
         // moves any points from the list of pendingPoints into the main list, and updates any stats
         private void ApplyPendingPoints()

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace AdaptiveLinearInterpolation
+namespace AdaptiveInterpolation
 {
     // represents an n-dimensional rectangle with a reference to an object of type SummaryType
     public class HyperBox<SummaryType>

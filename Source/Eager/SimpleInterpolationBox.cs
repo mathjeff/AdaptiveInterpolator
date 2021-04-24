@@ -6,7 +6,7 @@ using StatLists;
 using AdaptiveInterpolator;
 
 // the SimpleInterpolationBox will split in exactly the dimension it is told to split in
-namespace AdaptiveLinearInterpolation
+namespace AdaptiveInterpolation
 {
     class SimpleInterpolationBox<ScoreType> : ICombiner<IDatapoint<ScoreType>>
     {

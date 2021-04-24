@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace AdaptiveLinearInterpolation
+namespace AdaptiveInterpolation
 {
     // represents an interval
     public class FloatRange

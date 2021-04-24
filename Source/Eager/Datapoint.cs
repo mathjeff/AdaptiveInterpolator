@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace AdaptiveLinearInterpolation
+namespace AdaptiveInterpolation
 {
     // The IDatapoint interface requires that the object have coordinates
     public interface IDatapoint<ItemType>

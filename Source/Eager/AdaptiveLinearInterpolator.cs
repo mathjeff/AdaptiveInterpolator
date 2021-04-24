@@ -6,7 +6,7 @@ using System.Text;
 // the current version of the AdaptiveLinearInterpolator does a 0th order approximation of the datapoints near the coordinates in question
 // It intelligently determines a reasonable neighborhood of points nearby, and so if any dimensions don't help in certain areas, it won't worry about them
 // Improving it to a 1st order approximation would be a big improvement because it allows the error to drop much faster
-namespace AdaptiveLinearInterpolation
+namespace AdaptiveInterpolation
 {
     public class AdaptiveLinearInterpolator<SummaryType>
     {
