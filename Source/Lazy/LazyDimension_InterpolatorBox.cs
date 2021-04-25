@@ -153,7 +153,7 @@ namespace AdaptiveInterpolation
             // 2. It can contribute to overfitting, where we considered lots of models and chose only the best one, and used its past uncertainty to estimate its future uncertainty
             // Instead, we check all coordinates of only a few datapoints, which is much faster.
             // We still compute uncertainty using all points
-            int numDatapointsToCheck = (int)Math.Min(Math.Log(maxDimensions, 2) * 2, this.datapoints.Count);
+            int numDatapointsToCheck = (int)Math.Min(Math.Log(maxDimensions, 2) * 2, this.datapoints.Count / 2);
 
             // get the outputs for the given datapoints
             List<double> outputs = new List<double>();
