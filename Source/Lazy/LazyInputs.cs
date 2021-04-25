@@ -8,24 +8,32 @@ namespace AdaptiveInterpolation
     {
         int GetNumCoordinates();
         double GetInput(int coordinate);
+        string GetDescription(int coordinate);
     }
 
     public interface LazyCoordinate
     {
         double GetCoordinate();
+        string GetDescription();
     }
 
     public class EagerInput : LazyCoordinate
     {
-        public EagerInput(double value)
+        public EagerInput(double value, string description)
         {
             this.value = value;
+            this.description = description;
         }
         public double GetCoordinate()
         {
             return this.value;
         }
+        public string GetDescription()
+        {
+            return this.description;
+        }
         private double value;
+        private string description;
     }
 
     public class LazyInputList : LazyInputs
@@ -41,6 +49,10 @@ namespace AdaptiveInterpolation
         public double GetInput(int index)
         {
             return this.coordinates[index].GetCoordinate();
+        }
+        public string GetDescription(int index)
+        {
+            return this.coordinates[index].GetDescription();
         }
         List<LazyCoordinate> coordinates;
     }
@@ -70,9 +82,25 @@ namespace AdaptiveInterpolation
             {
                 LazyInputs child = this.children[i];
                 int childNumCoordinates = child.GetNumCoordinates();
-                if (shiftedIndex < childNumCoordinates) 
+                if (shiftedIndex < childNumCoordinates)
                 {
                     return child.GetInput(shiftedIndex);
+                }
+                shiftedIndex -= childNumCoordinates;
+            }
+            throw new ArgumentException("Index too large: " + index);
+        }
+
+        public string GetDescription(int index)
+        {
+            int shiftedIndex = index;
+            for (int i = 0; i < this.children.Count; i++)
+            {
+                LazyInputs child = this.children[i];
+                int childNumCoordinates = child.GetNumCoordinates();
+                if (shiftedIndex < childNumCoordinates)
+                {
+                    return child.GetDescription(shiftedIndex);
                 }
                 shiftedIndex -= childNumCoordinates;
             }

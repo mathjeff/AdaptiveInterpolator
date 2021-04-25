@@ -63,7 +63,13 @@ namespace AdaptiveInterpolation
             this.ApplyPendingPoints();
             if (this.lowerChild == null)
                 return null;
-            if (inputs.GetInput(this.splitDimension) > this.splitValue)
+            bool upper = inputs.GetInput(this.splitDimension) > this.splitValue;
+            /*if (upper)
+                System.Diagnostics.Debug.WriteLine("Box at depth " + this.depthFromRoot + " chose upper child because " + inputs.GetDescription(this.splitDimension) + " > " + this.splitValue);
+            else
+                System.Diagnostics.Debug.WriteLine("Box at depth " + this.depthFromRoot + " chose lower child because " + inputs.GetDescription(this.splitDimension) + " < " + this.splitValue);
+            */
+            if (upper)
                 return this.upperChild;
             else
                 return this.lowerChild;
@@ -134,7 +140,7 @@ namespace AdaptiveInterpolation
 
         private void ConsiderSplitting()
         {
-            System.Diagnostics.Debug.WriteLine("ConsiderSplitting in box at depth " + this.depthFromRoot + ", num points = " + this.NumDatapoints);
+            //System.Diagnostics.Debug.WriteLine("ConsiderSplitting in box at depth " + this.depthFromRoot + ", num points = " + this.NumDatapoints);
 
             if (this.datapoints.Count <= 1)
                 return;
@@ -147,7 +153,7 @@ namespace AdaptiveInterpolation
             // 2. It can contribute to overfitting, where we considered lots of models and chose only the best one, and used its past uncertainty to estimate its future uncertainty
             // Instead, we check all coordinates of only a few datapoints, which is much faster.
             // We still compute uncertainty using all points
-            int numDatapointsToCheck = (int)Math.Min(Math.Log(maxDimensions, 2), this.datapoints.Count);
+            int numDatapointsToCheck = (int)Math.Min(Math.Log(maxDimensions, 2) * 2, this.datapoints.Count);
 
             // get the outputs for the given datapoints
             List<double> outputs = new List<double>();
