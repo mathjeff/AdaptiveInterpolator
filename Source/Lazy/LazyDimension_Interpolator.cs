@@ -78,9 +78,14 @@ namespace AdaptiveInterpolation
             double childScoreSpread = child.GetScoreSpread();
             if (childScoreSpread <= 0)
                 return false;
-            // If we have more data, it is more worth descending further
-            // If the score spread in this box is much smaller than the initial score spread, then we are doing well and should keep splitting
-            return (this.root.GetScoreSpread() * child.NumDatapoints * child.NumDatapoints > this.root.NumDatapoints * childScoreSpread * 4);
+            // If we don't have much data it isn't worth descending further
+            // If the score spread in this box isn't much smaller than the initial score spread, then we aren't doing well and should stop splitting
+            if (this.root.GetScoreSpread() * child.NumDatapoints * child.NumDatapoints < this.root.NumDatapoints * childScoreSpread * 4)
+                return false;
+            // If none of our datapoints are very confident then it isn't worth descending further
+            if (this.root.GetScoreSpread() * child.Weight * child.Weight < this.root.Weight * childScoreSpread * 4)
+                return false;
+            return true;
         }
 
         private LazyDimension_InterpolatorBox<OutputType> root;

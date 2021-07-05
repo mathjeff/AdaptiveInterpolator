@@ -263,6 +263,13 @@ namespace AdaptiveInterpolation
                 return this.datapoints.Count + this.pendingDatapoints.Count;
             }
         }
+        public double Weight
+        {
+            get
+            {
+                return this.outputConverter.ConvertToDistribution(this.aggregateOutput).Weight;
+            }
+        }
         
         public OutputType AggregateOutput
         {
