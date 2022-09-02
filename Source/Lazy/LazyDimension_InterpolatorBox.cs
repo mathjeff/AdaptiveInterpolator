@@ -132,7 +132,8 @@ namespace AdaptiveInterpolation
             // If our parent splits slightly after us, then that means we did a bunch of effort splitting that soon became irrelevant.
             // So, we put our split threshold such that it should be slightly after our parent is expected to split.
             // Our split threshold is mostly only intended to trigger if lots of points are getting concentrated specifically into this box.
-            int result = (int)((double)numPointsAtLastConsideredSplit * ((double)this.depthFromRoot + 1.5));
+
+            int result = (int)((double)numPointsAtLastConsideredSplit * 1.5 + Math.Sqrt(numPointsAtLastConsideredSplit));
             if (result <= numPointsAtLastConsideredSplit)
                 result = numPointsAtLastConsideredSplit + 1;
             return result;
