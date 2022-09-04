@@ -19,7 +19,7 @@ namespace AdaptiveInterpolation
         public void AddDatapoint(IDatapoint<SummaryType> newDatapoint)
         {
             if (newDatapoint.NumInputDimensions != this.root.NumDimensions)
-                throw new ArgumentException("the number of dimensions is incorrect");
+                throw new ArgumentException("the number of dimensions is incorrect. Expected " + this.root.NumDatapoints + ", got " + newDatapoint.NumInputDimensions);
             this.root.AddDatapoint(newDatapoint);
 
             // Inform the root node that it may now be allowed to delegate the intensive analysis to a further descendent
@@ -101,7 +101,7 @@ namespace AdaptiveInterpolation
         private SmartInterpolationBox<SummaryType> FindNeighborhood(double[] coordinates, int maxNumIterations)
         {
             if (coordinates.Length != this.root.NumDimensions)
-                throw new ArgumentException("the number of dimensions is incorrect");
+                throw new ArgumentException("the number of dimensions is incorrect. Expected " + this.root.NumDatapoints + ", got " + coordinates.Length);
 
             // figure out how much room there was to start with
             int numSplits = 0;

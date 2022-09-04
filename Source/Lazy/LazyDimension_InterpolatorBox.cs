@@ -190,15 +190,35 @@ namespace AdaptiveInterpolation
                         maxInput = input;
                     inputs.Add(input);
                 }
-                // count the number of cases where larger input is correlated with larger output
+                // Group the inputs into those having high outputs and those having low outputs
+                Distribution inputsForLowOutput = new Distribution();
+                Distribution inputsForHighOutput = new Distribution();
+                for (int i = 0; i < inputs.Count; i++)
+                {
+                    Distribution thisPoint = Distribution.MakeDistribution(inputs[i], 0, 1);
+                    if (outputs[i] > middleOutput)
+                    {
+                        inputsForHighOutput = inputsForHighOutput.Plus(thisPoint);
+                    }
+                    else
+                    {
+                        inputsForLowOutput = inputsForLowOutput.Plus(thisPoint);
+                    }
+                }
+                // Now we choose an input split threshold based on the datapoints
+                // Note that this isn't necessarily the best split value for the inputs that we did analyze, but it should be a good split value for all of the inputs overall, anyway
                 double middleInput = (minInput + maxInput) / 2;
-                int numPolarityMatches = countNumPolarityMatches(inputs, outputs, middleInput, middleOutput);
+                double lowMiddle = inputsForLowOutput.GetMeanOr(middleInput);
+                double highMiddle = inputsForHighOutput.GetMeanOr(middleInput);
+                double inputThreshold = (lowMiddle + highMiddle) / 2;
+                // count the number of cases where larger input is correlated with larger output
+                int numPolarityMatches = countNumPolarityMatches(inputs, outputs, inputThreshold, middleOutput);
 
                 if (numPolarityMatches > bestDimensionScore)
                 {
                     bestDimensionScore = numPolarityMatches;
                     bestDimensionToSplit = dimension;
-                    splitValue = middleInput;
+                    splitValue = inputThreshold;
                 }
                 // If this dimension was perfect, we can stop
                 if (numPolarityMatches >= outputs.Count)

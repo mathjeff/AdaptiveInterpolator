@@ -32,6 +32,12 @@ namespace AdaptiveInterpolation
             this.sumSquaredValue = totalSquaredValue;
             this.sumWeight = totalWeight;
         }
+        public double GetMeanOr(double value)
+        {
+            if (this.sumWeight != 0)
+                return this.Mean;
+            return value;
+        }
         public double Mean
         {
             get
