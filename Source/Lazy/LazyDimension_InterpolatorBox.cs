@@ -218,7 +218,7 @@ namespace AdaptiveInterpolation
                 }
             }
             // if the polarity is usually backwards, that also counts as a good correlation
-            if (numPolarityMatches < outputs.Count / 2)
+            if (numPolarityMatches * 2 < outputs.Count)
                 numPolarityMatches = outputs.Count - numPolarityMatches;
             return numPolarityMatches;
         }
