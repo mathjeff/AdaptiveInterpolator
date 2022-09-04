@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using StatLists;
-using AdaptiveInterpolator;
 
 // the SmartInterpolationBox will figure out which dimensions are worth splitting and when
 namespace AdaptiveInterpolation

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using StatLists;
-using AdaptiveInterpolator;
 
 // the SimpleInterpolationBox will split in exactly the dimension it is told to split in
 namespace AdaptiveInterpolation
