@@ -192,17 +192,8 @@ namespace AdaptiveInterpolation
                 }
                 // count the number of cases where larger input is correlated with larger output
                 double middleInput = (minInput + maxInput) / 2;
-                int numPolarityMatches = 0;
-                for (int i = 0; i < outputs.Count; i++)
-                {
-                    if ((outputs[i] > middleOutput) == (inputs[i] > middleInput))
-                    {
-                        numPolarityMatches++;
-                    }
-                }
-                // if the polarity is usually backwards, that also counts as a good correlation
-                if (numPolarityMatches < outputs.Count / 2)
-                    numPolarityMatches = outputs.Count - numPolarityMatches;
+                int numPolarityMatches = countNumPolarityMatches(inputs, outputs, middleInput, middleOutput);
+
                 if (numPolarityMatches > bestDimensionScore)
                 {
                     bestDimensionScore = numPolarityMatches;
@@ -215,6 +206,21 @@ namespace AdaptiveInterpolation
             }
 
             this.Split(bestDimensionToSplit, splitValue);
+        }
+        private int countNumPolarityMatches(List<double> inputs, List<double> outputs, double inputThreshold, double outputThreshold)
+        {
+            int numPolarityMatches = 0;
+            for (int i = 0; i < outputs.Count; i++)
+            {
+                if ((outputs[i] > outputThreshold) == (inputs[i] > inputThreshold))
+                {
+                    numPolarityMatches++;
+                }
+            }
+            // if the polarity is usually backwards, that also counts as a good correlation
+            if (numPolarityMatches < outputs.Count / 2)
+                numPolarityMatches = outputs.Count - numPolarityMatches;
+            return numPolarityMatches;
         }
         private void Split(int dimension, double splitValue)
         {
