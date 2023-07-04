@@ -9,6 +9,7 @@ namespace AdaptiveInterpolation
     // It is a node in a binary tree for interpolating
     class LazyDimension_InterpolatorBox<OutputType>
     {
+        private static int nextBoxId;
         public LazyDimension_InterpolatorBox(INumerifier<OutputType> outputConverter, int depthFromRoot)
         {
             this.outputConverter = outputConverter;
@@ -17,6 +18,8 @@ namespace AdaptiveInterpolation
             this.pendingDatapoints = new List<LazyDimension_Datapoint<OutputType>>();
             this.aggregateOutput = this.outputConverter.Default();
             this.depthFromRoot = depthFromRoot;
+            nextBoxId++;
+            this.boxId = nextBoxId;
         }
 
         public void AddDatapoint(LazyDimension_Datapoint<OutputType> datapoint)
@@ -317,5 +320,6 @@ namespace AdaptiveInterpolation
         private int numPointsAtNextSplit = 1;
         private int depthFromRoot;
         INumerifier<OutputType> outputConverter;
+        private int boxId;
     }
 }
