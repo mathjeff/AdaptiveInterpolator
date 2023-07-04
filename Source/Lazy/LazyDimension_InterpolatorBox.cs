@@ -224,8 +224,8 @@ namespace AdaptiveInterpolation
                     splitValue = inputThreshold;
                 }
                 // If this dimension was perfect, we can stop
-                if (numPolarityMatches >= outputs.Count)
-                    break;
+                //if (numPolarityMatches >= outputs.Count)
+                //    break;
             }
 
             this.Split(bestDimensionToSplit, splitValue);
