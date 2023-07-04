@@ -172,7 +172,14 @@ namespace AdaptiveInterpolation
                     maxOutput = output;
                 outputs.Add(output);
             }
-            double middleOutput = (minOutput + maxOutput) / 2;
+            // Decide what output threshold to use
+            // We don't want one child box to be very small because that increases the risk of overfitting
+            // The risk of overfitting should be minimal if we try to split datapoints into above- and below-median outputs
+            // However, if the data is skewed, we can get a lower average error if we split based on the average output
+            // We combine these two estimates into one threshold here
+            double medianOutput = MedianUtils.EstimateMedian(outputs);
+            double outputRangeMiddle = (minOutput + maxOutput) / 2;
+            double middleOutput = (medianOutput + outputRangeMiddle) / 2;
 
             int bestDimensionToSplit = 0;
             int bestDimensionScore = -1;
