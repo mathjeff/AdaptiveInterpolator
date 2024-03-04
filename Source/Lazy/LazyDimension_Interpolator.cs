@@ -48,6 +48,8 @@ namespace AdaptiveInterpolation
             while (true)
             {
                 // consider moving to the child
+                if (currentBox.GetScoreSpread() <= 0)
+                    return currentBox; // no point in splitting further
                 nextBox = currentBox.ChooseChild(input);
                 // figure out whether it's time to stop splitting
                 if (nextBox == null)
@@ -76,8 +78,6 @@ namespace AdaptiveInterpolation
             if (child.NumDatapoints <= 1)
                 return false;
             double childScoreSpread = child.GetScoreSpread();
-            if (childScoreSpread <= 0)
-                return false;
             // If we don't have much data it isn't worth descending further
             // If the score spread in this box isn't much smaller than the initial score spread, then we aren't doing well and should stop splitting
             if (this.root.GetScoreSpread() * child.NumDatapoints * child.NumDatapoints < this.root.NumDatapoints * childScoreSpread * 4)
