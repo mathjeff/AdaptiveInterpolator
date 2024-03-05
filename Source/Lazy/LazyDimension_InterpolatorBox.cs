@@ -181,13 +181,18 @@ namespace AdaptiveInterpolation
                     dimensionPenalties.Add(penalty);
                 }
 
-                // select the dimensions having at least the median score
-                double medianPenalty = MedianUtils.EstimateMedian(dimensionPenalties);
+                // select about half of dimensions based on their score
                 List<int> goodDimensions = new List<int>();
-                for (int i = 0; i < candidateDimensions.Count; i++)
+                int newNumDimensions = (candidateDimensions.Count + 1) / 2;
+                for (int i = 0; i < newNumDimensions; i++)
                 {
-                    if (dimensionPenalties[i] < medianPenalty)
+                    // If there are an odd number of dimensions then the middle index in this iteration automatically gets included,
+                    // but it gets moved to the end where it won't automatically get included again for a while
+                    int otherIndex = candidateDimensions.Count - 1 - i;
+                    if (dimensionPenalties[i] <= dimensionPenalties[otherIndex])
                         goodDimensions.Add(candidateDimensions[i]);
+                    else
+                        goodDimensions.Add(candidateDimensions[otherIndex]);
                 }
 
                 // check more points in the next iteration
