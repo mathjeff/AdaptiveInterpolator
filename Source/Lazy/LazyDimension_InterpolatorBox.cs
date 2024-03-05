@@ -146,7 +146,7 @@ namespace AdaptiveInterpolation
         {
             //System.Diagnostics.Debug.WriteLine("ConsiderSplitting in box at depth " + this.depthFromRoot + ", num points = " + this.NumDatapoints);
 
-            if (this.datapoints.Count <= 1)
+            if (this.datapoints.Count <= 8)
                 return;
 
             int maxDimensions = this.datapoints[this.datapoints.Count - 1].GetInputs().GetNumCoordinates();
@@ -157,101 +157,108 @@ namespace AdaptiveInterpolation
             // 2. It can contribute to overfitting, where we considered lots of models and chose only the best one, and used its past uncertainty to estimate its future uncertainty
             // Instead, we check all coordinates of only a few datapoints, which is much faster.
             // We still compute uncertainty using all points
-            int numDatapointsToCheck = (int)Math.Min(Math.Log(maxDimensions, 2) * 2, this.datapoints.Count / 2);
+            int maxNumDatapointsToCheck = this.datapoints.Count;
+            int numDatapointsToCheck = 4;
 
-            // get the outputs for the given datapoints
-            List<double> outputs = new List<double>();
-            double maxOutput = double.NegativeInfinity;
-            double minOutput = double.PositiveInfinity;
-            for (int i = this.datapoints.Count - 1; i >= this.datapoints.Count - numDatapointsToCheck; i--)
-            {
-                double output = this.outputConverter.ConvertToDistribution(this.datapoints[i].GetOutput()).Mean;
-                if (output < minOutput)
-                    minOutput = output;
-                if (output > maxOutput)
-                    maxOutput = output;
-                outputs.Add(output);
-            }
-            // Decide what output threshold to use
-            // We don't want one child box to be very small because that increases the risk of overfitting
-            // The risk of overfitting should be minimal if we try to split datapoints into above- and below-median outputs
-            // However, if the data is skewed, we can get a lower average error if we split based on the average output
-            // We combine these two estimates into one threshold here
-            double medianOutput = MedianUtils.EstimateMedian(outputs);
-            double outputRangeMiddle = (minOutput + maxOutput) / 2;
-            double middleOutput = (medianOutput + outputRangeMiddle) / 2;
-
-            int bestDimensionToSplit = 0;
-            int bestDimensionScore = -1;
-            double splitValue = 0;
-            // check each input dimension
+            List<int> candidateDimensions = new List<int>();
             for (int dimension = 0; dimension < maxDimensions; dimension++)
             {
-                // get the inputs for the given datapoints in this dimension
-                List<double> inputs = new List<double>();
-                double minInput = double.PositiveInfinity;
-                double maxInput = double.NegativeInfinity;
-                for (int i = this.datapoints.Count - 1; i >= this.datapoints.Count - numDatapointsToCheck; i--)
+                candidateDimensions.Add(dimension);
+            }
+            int bestDimension = 0;
+            while (true)
+            {
+                // if there's only one candidate dimension left, it's the best
+                if (candidateDimensions.Count == 1)
                 {
-                    double input = this.datapoints[i].GetInputs().GetInput(dimension);
-                    if (input < minInput)
-                        minInput = input;
-                    if (input > maxInput)
-                        maxInput = input;
-                    inputs.Add(input);
+                    bestDimension = candidateDimensions[0];
+                    break;
                 }
-                // Group the inputs into those having high outputs and those having low outputs
-                Distribution inputsForLowOutput = new Distribution();
-                Distribution inputsForHighOutput = new Distribution();
-                for (int i = 0; i < inputs.Count; i++)
+                List<double> dimensionPenalties = new List<double>();
+                foreach (int dimension in candidateDimensions)
                 {
-                    Distribution thisPoint = Distribution.MakeDistribution(inputs[i], 0, 1);
-                    if (outputs[i] > middleOutput)
-                    {
-                        inputsForHighOutput = inputsForHighOutput.Plus(thisPoint);
-                    }
-                    else
-                    {
-                        inputsForLowOutput = inputsForLowOutput.Plus(thisPoint);
-                    }
+                    double penalty = getCandidateSplit(dimension, numDatapointsToCheck).Penalty;
+                    dimensionPenalties.Add(penalty);
                 }
-                // Now we choose an input split threshold based on the datapoints
-                // Note that this isn't necessarily the best split value for the inputs that we did analyze, but it should be a good split value for all of the inputs overall, anyway
-                double middleInput = (minInput + maxInput) / 2;
-                double lowMiddle = inputsForLowOutput.GetMeanOr(middleInput);
-                double highMiddle = inputsForHighOutput.GetMeanOr(middleInput);
-                double inputThreshold = (lowMiddle + highMiddle) / 2;
-                // count the number of cases where larger input is correlated with larger output
-                int numPolarityMatches = countNumPolarityMatches(inputs, outputs, inputThreshold, middleOutput);
 
-                if (numPolarityMatches > bestDimensionScore)
+                // select the dimensions having at least the median score
+                double medianPenalty = MedianUtils.EstimateMedian(dimensionPenalties);
+                List<int> goodDimensions = new List<int>();
+                for (int i = 0; i < candidateDimensions.Count; i++)
                 {
-                    bestDimensionScore = numPolarityMatches;
-                    bestDimensionToSplit = dimension;
-                    splitValue = inputThreshold;
+                    if (dimensionPenalties[i] > medianPenalty)
+                        goodDimensions.Add(candidateDimensions[i]);
                 }
-                // If this dimension was perfect, we can stop
-                //if (numPolarityMatches >= outputs.Count)
-                //    break;
+
+                // check more points in the next iteration
+                numDatapointsToCheck = (int)(numDatapointsToCheck * 1.5 + 1);
+                // if we've used all the available points, then we just choose the dimension that did the best on these datapoints
+                if (numDatapointsToCheck > maxNumDatapointsToCheck)
+                {
+                    double bestPenalty = double.PositiveInfinity;
+                    for (int i = 0; i < candidateDimensions.Count; i++)
+                    {
+                        if (dimensionPenalties[i] < bestPenalty)
+                        {
+                            bestPenalty = dimensionPenalties[i];
+                            bestDimension = candidateDimensions[i];
+                        }
+                    }
+                    break;
+                }
+
+                // If not all dimensions had the same score, filter the results to the ones with good scores
+                if (goodDimensions.Count > 0)
+                    candidateDimensions = goodDimensions;
             }
 
-            this.Split(bestDimensionToSplit, splitValue);
+            // get the value to split at
+            double splitValue = this.getCandidateSplit(bestDimension, maxNumDatapointsToCheck).SplitValue;
+            this.Split(bestDimension, splitValue);
         }
-        private int countNumPolarityMatches(List<double> inputs, List<double> outputs, double inputThreshold, double outputThreshold)
+
+
+        private CandidateSplit getCandidateSplit(int dimension, int numDatapointsToCheck)
         {
-            int numPolarityMatches = 0;
+            List<double> outputs = new List<double>();
+            // get the inputs for the given datapoints in this dimension
+            List<double> inputs = new List<double>();
+            double minInput = double.PositiveInfinity;
+            double maxInput = double.NegativeInfinity;
+            for (int i = this.datapoints.Count - 1; i >= this.datapoints.Count - numDatapointsToCheck; i--)
+            {
+                LazyDimension_Datapoint<OutputType> datapoint = this.datapoints[i];
+                double input = datapoint.GetInputs().GetInput(dimension);
+                if (input < minInput)
+                    minInput = input;
+                if (input > maxInput)
+                    maxInput = input;
+                inputs.Add(input);
+                outputs.Add(this.outputConverter.ConvertToDistribution(datapoint.GetOutput()).Mean);
+            }
+            // Now we choose an input split threshold based on the datapoints
+            // Note that this isn't necessarily the best split value for the inputs that we did analyze, but it should be a good split value for all of the inputs overall, anyway
+            double middleInput = (minInput + maxInput) / 2;
+            // count the number of cases where larger input is correlated with larger output
+            double stddev = countSplitStddev(inputs, outputs, middleInput);
+            return new CandidateSplit(stddev, middleInput);
+        }
+
+        private double countSplitStddev(List<double> inputs, List<double> outputs, double inputThreshold)
+        {
+            Distribution low = new Distribution();
+            Distribution high = new Distribution();
             for (int i = 0; i < outputs.Count; i++)
             {
-                if ((outputs[i] > outputThreshold) == (inputs[i] > inputThreshold))
-                {
-                    numPolarityMatches++;
-                }
+                if (inputs[i] <= inputThreshold)
+                    low = low.Plus(outputs[i]);
+                else
+                    high = high.Plus(outputs[i]);
             }
-            // if the polarity is usually backwards, that also counts as a good correlation
-            if (numPolarityMatches * 2 < outputs.Count)
-                numPolarityMatches = outputs.Count - numPolarityMatches;
-            return numPolarityMatches;
+            double totalWeight = low.Weight + high.Weight;
+            return low.StdDev * low.Weight / totalWeight + high.StdDev * high.Weight / totalWeight;
         }
+
         private void Split(int dimension, double splitValue)
         {
 
