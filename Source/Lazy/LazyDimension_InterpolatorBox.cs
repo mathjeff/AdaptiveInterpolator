@@ -186,7 +186,7 @@ namespace AdaptiveInterpolation
                 List<int> goodDimensions = new List<int>();
                 for (int i = 0; i < candidateDimensions.Count; i++)
                 {
-                    if (dimensionPenalties[i] > medianPenalty)
+                    if (dimensionPenalties[i] < medianPenalty)
                         goodDimensions.Add(candidateDimensions[i]);
                 }
 
