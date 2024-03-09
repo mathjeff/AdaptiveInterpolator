@@ -307,8 +307,13 @@ namespace AdaptiveInterpolation
             {
                 double overallStddev = Math.Sqrt(low.StdDev * low.StdDev + high.StdDev * high.StdDev);
                 if (overallStddev <= 0)
-                    overallStddev = 1;
-                z = Math.Abs(high.Mean - low.Mean) / overallStddev;
+                {
+                    z = 1000;
+                }
+                else
+                {
+                    z = Math.Abs(high.Mean - low.Mean) / overallStddev;
+                }
             }
 
             return new ThresholdComparison(dimension, inputThreshold, z, high.Mean > low.Mean);
