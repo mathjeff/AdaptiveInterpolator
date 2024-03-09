@@ -190,6 +190,26 @@ namespace AdaptiveInterpolation
             {
                 candidateDimensions.Add(dimension);
             }
+            // look for two adjacent datapoints with different outputs
+            int interestingDatapointIndex = this.datapoints.Count - 1;
+            double lastValue = 0;
+            for (int i = 0; i < maxNumDatapointsToCheck; i++)
+            {
+                int candidate = this.datapoints.Count - 1 - i;
+                double value = this.outputConverter.ConvertToDistribution(this.datapoints[candidate].GetOutput()).Mean;
+                if (i == 0)
+                {
+                    lastValue = value;
+                }
+                else
+                {
+                    if (value != lastValue)
+                    {
+                        interestingDatapointIndex = candidate;
+                        break;
+                    }
+                }
+            }
             List<ThresholdComparison> splits = new List<ThresholdComparison>();
             while (true)
             {
@@ -201,10 +221,19 @@ namespace AdaptiveInterpolation
                 if (numDatapointsToCheck < initialNumDatapointsToCheck)
                     numDatapointsToCheck = initialNumDatapointsToCheck;
 
+                // Determine which datapoints to check
+                int lastDatapointIndexExclusive = this.datapoints.Count - 1;
+                if (lastDatapointIndexExclusive - numDatapointsToCheck > interestingDatapointIndex)
+                {
+                    // If we check the last few datapoints, all the output values will be the same
+                    lastDatapointIndexExclusive = interestingDatapointIndex + 1;
+                }
+                int firstDatapointIndex = Math.Max(0, lastDatapointIndexExclusive - numDatapointsToCheck);
+
                 List<ThresholdComparison> candidateSplits = new List<ThresholdComparison>();
                 foreach (int dimension in candidateDimensions)
                 {
-                    ThresholdComparison candidateSplit = getCandidateSplit(dimension, numDatapointsToCheck);
+                    ThresholdComparison candidateSplit = getCandidateSplit(dimension, firstDatapointIndex, lastDatapointIndexExclusive);
                     candidateSplits.Add(candidateSplit);
                 }
                 // If we've reached the target number of dimensions, we're done
@@ -237,14 +266,14 @@ namespace AdaptiveInterpolation
         }
 
 
-        private ThresholdComparison getCandidateSplit(int dimension, int numDatapointsToCheck)
+        private ThresholdComparison getCandidateSplit(int dimension, int firstDatapointIndex, int lastDatapointIndex)
         {
             List<double> outputs = new List<double>();
             // get the inputs for the given datapoints in this dimension
             List<double> inputs = new List<double>();
             double minInput = double.PositiveInfinity;
             double maxInput = double.NegativeInfinity;
-            for (int i = this.datapoints.Count - 1; i >= this.datapoints.Count - numDatapointsToCheck; i--)
+            for (int i = firstDatapointIndex; i < lastDatapointIndex; i++)
             {
                 LazyDimension_Datapoint<OutputType> datapoint = this.datapoints[i];
                 double input = datapoint.GetInputs().GetInput(dimension);
