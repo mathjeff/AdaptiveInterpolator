@@ -13,7 +13,6 @@ namespace AdaptiveInterpolation
         public LazyDimension_InterpolatorBox(INumerifier<OutputType> outputConverter, int depthFromRoot)
         {
             this.outputConverter = outputConverter;
-            this.splitDimension = -1;
             this.datapoints = new List<LazyDimension_Datapoint<OutputType>>();
             this.pendingDatapoints = new List<LazyDimension_Datapoint<OutputType>>();
             this.aggregateOutput = this.outputConverter.Default();
@@ -66,7 +65,7 @@ namespace AdaptiveInterpolation
             this.ApplyPendingPoints();
             if (this.lowerChild == null)
                 return null;
-            bool upper = inputs.GetInput(this.splitDimension) > this.splitValue;
+            bool upper = this.chooseUpperChild(inputs);
             /*if (upper)
                 System.Diagnostics.Debug.WriteLine("Box at depth " + this.depthFromRoot + " chose upper child because " + inputs.GetDescription(this.splitDimension) + " > " + this.splitValue);
             else
@@ -77,7 +76,24 @@ namespace AdaptiveInterpolation
             else
                 return this.lowerChild;
         }
-
+        private bool chooseUpperChild(LazyDimension_Datapoint<OutputType> datapoint)
+        {
+            return this.chooseUpperChild(datapoint.GetInputs());
+        }
+        private bool chooseUpperChild(LazyInputs inputs)
+        {
+            double lowerWeight = 0;
+            double upperWeight = 0;
+            foreach (ThresholdComparison threshold in this.splits)
+            {
+                double value = inputs.GetInput(threshold.Dimension);
+                if (threshold.Evaluate(value))
+                    upperWeight += threshold.Weight;
+                else
+                    lowerWeight += threshold.Weight;
+            }
+            return upperWeight > lowerWeight;
+        }
 
         // moves any points from the list of pendingPoints into the main list, and updates any stats
         private void ApplyPendingPoints()
@@ -120,7 +136,7 @@ namespace AdaptiveInterpolation
             this.datapoints.Add(newDatapoint);
             if (this.lowerChild != null)
             {
-                if (newDatapoint.GetInputs().GetInput(this.splitDimension) > this.splitValue)
+                if (this.chooseUpperChild(newDatapoint))
                     this.upperChild.AddDatapoint(newDatapoint);
                 else
                     this.lowerChild.AddDatapoint(newDatapoint);
@@ -157,28 +173,45 @@ namespace AdaptiveInterpolation
             // 2. It can contribute to overfitting, where we considered lots of models and chose only the best one, and used its past uncertainty to estimate its future uncertainty
             // Instead, we check all coordinates of only a few datapoints, which is much faster.
             // We still compute uncertainty using all points
-            int maxNumDatapointsToCheck = this.datapoints.Count;
-            int numDatapointsToCheck = 4;
+            int maxNumDatapointsToCheck = this.datapoints.Count / 2;
+            int initialNumDatapointsToCheck = 4;
+            int targetNumDimensionsToUse = (int)Math.Log(maxDimensions, 2) * 2;
+
+            double fractionOfDimensionsToUse = (double)targetNumDimensionsToUse / (double)maxDimensions;
+            double initialFractionDatapointsToUse = (double)initialNumDatapointsToCheck / (double)maxNumDatapointsToCheck;
+            // Determine how quickly to grow the number of datapoints used based on how many dimensions we're considering in this round
+            double logDatapointsPerLogDimensions = Math.Log(initialFractionDatapointsToUse, fractionOfDimensionsToUse);
+            // Don't need to grow the number of datapoints faster than the number of dimensions
+            if (logDatapointsPerLogDimensions > 1)
+                logDatapointsPerLogDimensions = 1;
 
             List<int> candidateDimensions = new List<int>();
             for (int dimension = 0; dimension < maxDimensions; dimension++)
             {
                 candidateDimensions.Add(dimension);
             }
-            int bestDimension = 0;
+            List<ThresholdComparison> splits = new List<ThresholdComparison>();
             while (true)
             {
-                // if there's only one candidate dimension left, it's the best
-                if (candidateDimensions.Count == 1)
-                {
-                    bestDimension = candidateDimensions[0];
-                    break;
-                }
-                List<double> dimensionPenalties = new List<double>();
+                // Determine how many datapoints to check based on the number of dimensions in this round
+                // When there are fewer dimensions, we can afford to spend more time on each
+                int numDatapointsToCheck = (int)(initialNumDatapointsToCheck * Math.Pow((double)maxDimensions / (double)candidateDimensions.Count, logDatapointsPerLogDimensions));
+                if (numDatapointsToCheck > maxNumDatapointsToCheck)
+                    numDatapointsToCheck = maxNumDatapointsToCheck;
+                if (numDatapointsToCheck < initialNumDatapointsToCheck)
+                    numDatapointsToCheck = initialNumDatapointsToCheck;
+
+                List<ThresholdComparison> candidateSplits = new List<ThresholdComparison>();
                 foreach (int dimension in candidateDimensions)
                 {
-                    double penalty = getCandidateSplit(dimension, numDatapointsToCheck).Penalty;
-                    dimensionPenalties.Add(penalty);
+                    ThresholdComparison candidateSplit = getCandidateSplit(dimension, numDatapointsToCheck);
+                    candidateSplits.Add(candidateSplit);
+                }
+                // If we've reached the target number of dimensions, we're done
+                if (candidateSplits.Count <= targetNumDimensionsToUse)
+                {
+                    splits = candidateSplits;
+                    break;
                 }
 
                 // select about half of dimensions based on their score
@@ -189,41 +222,22 @@ namespace AdaptiveInterpolation
                     // If there are an odd number of dimensions then the middle index in this iteration automatically gets included,
                     // but it gets moved to the end where it won't automatically get included again for a while
                     int otherIndex = candidateDimensions.Count - 1 - i;
-                    if (dimensionPenalties[i] <= dimensionPenalties[otherIndex])
+                    if (candidateSplits[i].Weight >= candidateSplits[otherIndex].Weight)
                         goodDimensions.Add(candidateDimensions[i]);
                     else
                         goodDimensions.Add(candidateDimensions[otherIndex]);
                 }
 
-                // check more points in the next iteration
-                numDatapointsToCheck = (int)(numDatapointsToCheck * 1.5 + 1);
-                // if we've used all the available points, then we just choose the dimension that did the best on these datapoints
-                if (numDatapointsToCheck > maxNumDatapointsToCheck)
-                {
-                    double bestPenalty = double.PositiveInfinity;
-                    for (int i = 0; i < candidateDimensions.Count; i++)
-                    {
-                        if (dimensionPenalties[i] < bestPenalty)
-                        {
-                            bestPenalty = dimensionPenalties[i];
-                            bestDimension = candidateDimensions[i];
-                        }
-                    }
-                    break;
-                }
-
-                // If not all dimensions had the same score, filter the results to the ones with good scores
-                if (goodDimensions.Count > 0)
-                    candidateDimensions = goodDimensions;
+                // update list of dimensions to check
+                candidateDimensions = goodDimensions;
             }
 
             // get the value to split at
-            double splitValue = this.getCandidateSplit(bestDimension, maxNumDatapointsToCheck).SplitValue;
-            this.Split(bestDimension, splitValue);
+            this.Split(splits);
         }
 
 
-        private CandidateSplit getCandidateSplit(int dimension, int numDatapointsToCheck)
+        private ThresholdComparison getCandidateSplit(int dimension, int numDatapointsToCheck)
         {
             List<double> outputs = new List<double>();
             // get the inputs for the given datapoints in this dimension
@@ -243,14 +257,9 @@ namespace AdaptiveInterpolation
             }
             // Now we choose an input split threshold based on the datapoints
             // Note that this isn't necessarily the best split value for the inputs that we did analyze, but it should be a good split value for all of the inputs overall, anyway
-            double middleInput = (minInput + maxInput) / 2;
-            // count the number of cases where larger input is correlated with larger output
-            double stddev = countSplitStddev(inputs, outputs, middleInput);
-            return new CandidateSplit(stddev, middleInput);
-        }
+            double inputThreshold = (minInput + maxInput) / 2;
 
-        private double countSplitStddev(List<double> inputs, List<double> outputs, double inputThreshold)
-        {
+            // Now we split points based on the threshold
             Distribution low = new Distribution();
             Distribution high = new Distribution();
             for (int i = 0; i < outputs.Count; i++)
@@ -260,18 +269,25 @@ namespace AdaptiveInterpolation
                 else
                     high = high.Plus(outputs[i]);
             }
-            double totalWeight = low.Weight + high.Weight;
-            return low.StdDev * low.Weight / totalWeight + high.StdDev * high.Weight / totalWeight;
+            double z;
+            double overallStddev = Math.Sqrt(low.StdDev * low.StdDev + high.StdDev * high.StdDev);
+            if (overallStddev <= 0)
+                overallStddev = 1;
+            z = Math.Abs(high.Mean - low.Mean) / overallStddev;
+
+            return new ThresholdComparison(dimension, inputThreshold, z, high.Mean > low.Mean);
         }
 
-        private void Split(int dimension, double splitValue)
+        private void Split(List<ThresholdComparison> splits)
         {
+            //Console.WriteLine("Splitting box at depth " + this.depthFromRoot + " having " + this.datapoints.Count + " points using " + splits.Count + " dimensions");
+            this.splits = splits;
 
             List<LazyDimension_Datapoint<OutputType>> lowerPoints = new List<LazyDimension_Datapoint<OutputType>>();
             List<LazyDimension_Datapoint<OutputType>> upperPoints = new List<LazyDimension_Datapoint<OutputType>>();
             foreach (LazyDimension_Datapoint<OutputType> datapoint in this.datapoints)
             {
-                if (datapoint.GetInputs().GetInput(dimension) > splitValue)
+                if (chooseUpperChild(datapoint))
                     upperPoints.Add(datapoint);
                 else
                     lowerPoints.Add(datapoint);
@@ -282,10 +298,6 @@ namespace AdaptiveInterpolation
                 // If all the points fell on the same side of the split, then there's no need to split anymore
                 return;
             }
-
-
-            this.splitDimension = dimension;
-            this.splitValue = splitValue;
 
             this.lowerChild = new LazyDimension_InterpolatorBox<OutputType>(this.outputConverter, this.depthFromRoot + 1);
             this.upperChild = new LazyDimension_InterpolatorBox<OutputType>(this.outputConverter, this.depthFromRoot + 1);
@@ -330,8 +342,8 @@ namespace AdaptiveInterpolation
 
         private List<LazyDimension_Datapoint<OutputType>> pendingDatapoints = new List<LazyDimension_Datapoint<OutputType>>();
 
-        private int splitDimension;
-        private double splitValue;
+        private List<ThresholdComparison> splits;
+
         private LazyDimension_InterpolatorBox<OutputType> lowerChild;
         private LazyDimension_InterpolatorBox<OutputType> upperChild;
         private OutputType aggregateOutput;
