@@ -175,7 +175,7 @@ namespace AdaptiveInterpolation
             // We still compute uncertainty using all points
             int maxNumDatapointsToCheck = this.datapoints.Count / 2;
             int initialNumDatapointsToCheck = 4;
-            int targetNumDimensionsToUse = (int)Math.Log(maxDimensions, 2);
+            int targetNumDimensionsToUse = (int)Math.Log(maxDimensions, 2) * 2;
 
             double fractionOfDimensionsToUse = (double)targetNumDimensionsToUse / (double)maxDimensions;
             double initialFractionDatapointsToUse = (double)initialNumDatapointsToCheck / (double)maxNumDatapointsToCheck;
@@ -231,11 +231,14 @@ namespace AdaptiveInterpolation
                 int firstDatapointIndex = Math.Max(0, lastDatapointIndexExclusive - numDatapointsToCheck);
 
                 List<ThresholdComparison> candidateSplits = new List<ThresholdComparison>();
+                List<double> weights = new List<double>();
                 foreach (int dimension in candidateDimensions)
                 {
                     ThresholdComparison candidateSplit = getCandidateSplit(dimension, firstDatapointIndex, lastDatapointIndexExclusive);
                     candidateSplits.Add(candidateSplit);
+                    weights.Add(candidateSplit.Weight);
                 }
+                double medianWeight = MedianUtils.EstimateMedian(weights);
                 // If we've reached the target number of dimensions, we're done
                 if (candidateSplits.Count <= targetNumDimensionsToUse)
                 {
@@ -245,20 +248,28 @@ namespace AdaptiveInterpolation
 
                 // select about half of dimensions based on their score
                 List<int> goodDimensions = new List<int>();
-                int newNumDimensions = (candidateDimensions.Count + 1) / 2;
-                for (int i = 0; i < newNumDimensions; i++)
+                for (int i = 0; i < candidateDimensions.Count; i++)
                 {
-                    // If there are an odd number of dimensions then the middle index in this iteration automatically gets included,
-                    // but it gets moved to the end where it won't automatically get included again for a while
-                    int otherIndex = candidateDimensions.Count - 1 - i;
-                    if (candidateSplits[i].Weight >= candidateSplits[otherIndex].Weight)
-                        goodDimensions.Add(candidateDimensions[i]);
-                    else
-                        goodDimensions.Add(candidateDimensions[otherIndex]);
+                    if (weights[i] > medianWeight)
+                        goodDimensions.Add(i);
                 }
 
                 // update list of dimensions to check
-                candidateDimensions = goodDimensions;
+                if (goodDimensions.Count > 0)
+                {
+                    // We found at least one dimension better than at least one other dimension, so we keep the good dimensions
+                    candidateDimensions = goodDimensions;
+                }
+                else
+                {
+                    // We didn't notice any dimensions better than any others so we just arbitrarily remove some
+                    List<int> arbitraryDimensions = new List<int>();
+                    for (int i = 0; i < candidateDimensions.Count / 2; i++)
+                    {
+                        arbitraryDimensions.Add(i);
+                    }
+                    candidateDimensions = arbitraryDimensions;
+                }
             }
 
             // get the value to split at
