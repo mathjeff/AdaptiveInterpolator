@@ -216,6 +216,12 @@ namespace AdaptiveInterpolation
                 // Determine how many datapoints to check based on the number of dimensions in this round
                 // When there are fewer dimensions, we can afford to spend more time on each
                 int numDatapointsToCheck = (int)(initialNumDatapointsToCheck * Math.Pow((double)maxDimensions / (double)candidateDimensions.Count, logDatapointsPerLogDimensions));
+
+                // If we've reached the goal number of dimensions, use as many datapoints as allowed for determining the final split values
+                if (candidateDimensions.Count <= targetNumDimensionsToUse)
+                    numDatapointsToCheck = maxNumDatapointsToCheck;
+
+                // clamp to valid number of dimensions
                 if (numDatapointsToCheck > maxNumDatapointsToCheck)
                     numDatapointsToCheck = maxNumDatapointsToCheck;
                 if (numDatapointsToCheck < initialNumDatapointsToCheck)
