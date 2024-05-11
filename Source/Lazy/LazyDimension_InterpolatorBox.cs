@@ -175,7 +175,7 @@ namespace AdaptiveInterpolation
             // We still compute uncertainty using all points
             int maxNumDatapointsToCheck = this.datapoints.Count / 2;
             int initialNumDatapointsToCheck = 4;
-            int targetNumDimensionsToUse = (int)Math.Log(maxDimensions, 2) * 2;
+            int targetNumDimensionsToUse = Math.Max(1, (int)Math.Log(maxDimensions, 2) * 2);
 
             double fractionOfDimensionsToUse = (double)targetNumDimensionsToUse / (double)maxDimensions;
             double initialFractionDatapointsToUse = (double)initialNumDatapointsToCheck / (double)maxNumDatapointsToCheck;
