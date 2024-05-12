@@ -315,25 +315,19 @@ namespace AdaptiveInterpolation
                 else
                     high = high.Plus(outputs[i]);
             }
-            double z;
+            double dimensionScore;
             if (low.Weight <= 0 || high.Weight <= 0)
             {
-                z = 0;
+                dimensionScore = 0;
             }
             else
             {
-                double overallStddev = Math.Sqrt(low.StdDev * low.StdDev + high.StdDev * high.StdDev);
-                if (overallStddev <= 0)
-                {
-                    z = 1000;
-                }
-                else
-                {
-                    z = Math.Abs(high.Mean - low.Mean) / overallStddev;
-                }
+                // We want to split boxes in a way that even if some other, unexpected datapoints get added later, this is still a good split.
+                // Currently we compute the amount of unexpected change that must be added before the box with higher output becomes the box with lower output
+                dimensionScore = Math.Abs(high.Mean - low.Mean) * Math.Min(high.Weight, low.Weight);
             }
 
-            return new ThresholdComparison(dimension, inputThreshold, z, high.Mean > low.Mean);
+            return new ThresholdComparison(dimension, inputThreshold, dimensionScore, high.Mean > low.Mean);
         }
 
         private void Split(List<ThresholdComparison> splits)
