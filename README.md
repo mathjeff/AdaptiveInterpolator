@@ -1,8 +1,22 @@
 AdaptiveInterpolator
 by Jeff Gaston
 
-The AdaptiveInterpolater was created to performs numerical interpolation for multidimensional data. It's essentially an R tree.
+AdaptiveInterpolater was created to predict the value of a function based on example data. It's essentially an [R tree](https://en.wikipedia.org/wiki/R-tree) that predicts each value to be the average of the points in its box.
 
-The caller chooses a number of dimensions in the input space, and provides several data points by calling AddDatapoint. When the caller invokes Interpolate, then the interpolator categorizes the the data points and attempts to fit a somewhat smooth surface to them, and uses the value of the surface for that input to generate the output.
+Interesting attributes of AdaptiveInterpolator:
 
-Currently, the implementation is a binary tree that splits in different dimensions according to the shape of the data. At some point in the future it may be worth implementing a linear interpolator after having found a region from which to interpolate.
+1. It adjusts how far to split a node [based on](https://github.com/mathjeff/AdaptiveInterpolator/blob/master/Source/Lazy/LazyDimension_Interpolator.cs#L83) how good the predictions are.
+
+  * When predictions are good, then noise is small, and there are more splits and better predictions.
+
+  * When predictions are bad, then noise is large, and there are fewer splits so we can better estimate the noise.
+
+2. It evaluates dimension values [lazily](https://github.com/mathjeff/AdaptiveInterpolator/blob/master/Source/Lazy/LazyDimension_Interpolator.cs#L17)
+
+  * This can help when computing the value of a specific dimension is expensive.
+
+  * AdaptiveInterpolator can handle [thousands of dimensions](http://github.com/mathjeff/ActivityRecommender) and tens of thousands of datapoints on a phone in under a second
+
+3. Each split is [a vote](https://github.com/mathjeff/AdaptiveInterpolator/blob/master/Source/Lazy/LazyDimension_InterpolatorBox.cs#L87) of several dimensions
+
+  * This can help when individual dimensions are independently noisy.

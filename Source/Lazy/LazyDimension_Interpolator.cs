@@ -79,7 +79,7 @@ namespace AdaptiveInterpolation
                 return false;
             double childScoreSpread = child.GetScoreSpread();
             // If we don't have much data it isn't worth descending further
-            // If the score spread in this box isn't much smaller than the initial score spread, then we aren't doing well and should stop splitting
+            // If the score spread in this box isn't much smaller than the initial score spread, then we aren't doing well and should stop splitting so we can instead have a good estimate of the noise
             if (this.root.GetScoreSpread() * child.NumDatapoints * child.NumDatapoints < this.root.NumDatapoints * childScoreSpread * 4)
                 return false;
             // If none of our datapoints are very confident then it isn't worth descending further
