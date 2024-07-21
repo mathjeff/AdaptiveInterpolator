@@ -24,6 +24,7 @@ namespace AdaptiveInterpolation
         public void AddDatapoint(ILazyDatapoint<OutputType> datapoint)
         {
             this.pendingDatapoints.Add(datapoint);
+            this.numAdditions++;
             // System.Diagnostics.Debug.WriteLine("AddDatapoint in box at depth " + this.depthFromRoot + ", num points = " + this.NumDatapoints + ", num coordinates = " + datapoint.GetInputs().GetNumCoordinates());
         }
         public void AddDatapoints(IEnumerable<ILazyDatapoint<OutputType>> newDatapoints)
@@ -98,8 +99,6 @@ namespace AdaptiveInterpolation
         // moves any points from the list of pendingPoints into the main list, and updates any stats
         private void ApplyPendingPoints()
         {
-            int totalNumPoints = this.datapoints.Count + this.pendingDatapoints.Count;
-
             // Now actually add those points and do the split
             foreach (ILazyDatapoint<OutputType> datapoint in this.pendingDatapoints)
             {
@@ -115,12 +114,12 @@ namespace AdaptiveInterpolation
                 //   requesting an interpolation
                 //   adding 1 point
                 // So, we preplan how many points are required for the next split
-                if (this.datapoints.Count >= this.numPointsAtNextSplit)
+                if (this.numAdditions >= this.numAdditionsAtNextSplit)
                 {
-                    this.numPointsAtNextSplit = this.RequiredNumPointsToSplit(this.numPointsAtNextSplit);
+                    this.numAdditionsAtNextSplit = this.RequiredNumAdditionsToSplit(this.numAdditionsAtNextSplit);
 
                     // only actually do the split if this is the last planned split
-                    if (this.numPointsAtNextSplit > totalNumPoints)
+                    if (this.numAdditionsAtNextSplit > this.numAdditions)
                         this.ConsiderSplitting();
                 }
             }
@@ -144,7 +143,7 @@ namespace AdaptiveInterpolation
         }
 
         // tells whether it is worth considering a split, given the current number of datapoints and also the number that we had at the last split
-        private int RequiredNumPointsToSplit(int numPointsAtLastConsideredSplit)
+        private int RequiredNumAdditionsToSplit(int numAdditionsAtLastConsideredSplit)
         {
             // The reason we decrease the splitting frequency as our ancestry increases is to avoid redudant splits that are going to get thrown out soon.
             // If our parent uses the same split factor as us and is receiving random inputs, then our parent is expected to want to split at about the same time we do, or maybe slightly later.
@@ -152,9 +151,9 @@ namespace AdaptiveInterpolation
             // So, we put our split threshold such that it should be slightly after our parent is expected to split.
             // Our split threshold is mostly only intended to trigger if lots of points are getting concentrated specifically into this box.
 
-            int result = (int)((double)numPointsAtLastConsideredSplit * 1.5 + Math.Sqrt(numPointsAtLastConsideredSplit));
-            if (result <= numPointsAtLastConsideredSplit)
-                result = numPointsAtLastConsideredSplit + 1;
+            int result = (int)((double)numAdditionsAtLastConsideredSplit * 2 + Math.Sqrt(numAdditionsAtLastConsideredSplit));
+            if (result <= numAdditionsAtLastConsideredSplit)
+                result = numAdditionsAtLastConsideredSplit + 1;
             return result;
         }
 
@@ -367,7 +366,7 @@ namespace AdaptiveInterpolation
 
         private void PermitSplitting()
         {
-            this.numPointsAtNextSplit = this.NumDatapoints;
+            this.numAdditionsAtNextSplit = this.numAdditions;
         }
         public int NumDatapoints
         {
@@ -400,9 +399,13 @@ namespace AdaptiveInterpolation
         private LazyDimension_InterpolatorBox<OutputType> upperChild;
         private OutputType aggregateOutput;
         private List<ILazyDatapoint<OutputType>> datapoints;
-        private int numPointsAtNextSplit = 1;
+        private int numAdditionsAtNextSplit = 1;
         private int depthFromRoot;
         INumerifier<OutputType> outputConverter;
         private int boxId;
+
+        // The number of times a datapoint was added to this box
+        // Because datapoints can be removed, this might be larger than the number of datapoints currently in this box
+        private int numAdditions;
     }
 }
