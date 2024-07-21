@@ -13,27 +13,27 @@ namespace AdaptiveInterpolation
         public LazyDimension_InterpolatorBox(INumerifier<OutputType> outputConverter, int depthFromRoot)
         {
             this.outputConverter = outputConverter;
-            this.datapoints = new List<LazyDimension_Datapoint<OutputType>>();
-            this.pendingDatapoints = new List<LazyDimension_Datapoint<OutputType>>();
+            this.datapoints = new List<ILazyDatapoint<OutputType>>();
+            this.pendingDatapoints = new List<ILazyDatapoint<OutputType>>();
             this.aggregateOutput = this.outputConverter.Default();
             this.depthFromRoot = depthFromRoot;
             nextBoxId++;
             this.boxId = nextBoxId;
         }
 
-        public void AddDatapoint(LazyDimension_Datapoint<OutputType> datapoint)
+        public void AddDatapoint(ILazyDatapoint<OutputType> datapoint)
         {
             this.pendingDatapoints.Add(datapoint);
             // System.Diagnostics.Debug.WriteLine("AddDatapoint in box at depth " + this.depthFromRoot + ", num points = " + this.NumDatapoints + ", num coordinates = " + datapoint.GetInputs().GetNumCoordinates());
         }
-        public void AddDatapoints(IEnumerable<LazyDimension_Datapoint<OutputType>> newDatapoints)
+        public void AddDatapoints(IEnumerable<ILazyDatapoint<OutputType>> newDatapoints)
         {
-            foreach (LazyDimension_Datapoint<OutputType> newDatapoint in newDatapoints)
+            foreach (ILazyDatapoint<OutputType> newDatapoint in newDatapoints)
             {
                 this.AddDatapoint(newDatapoint);
             }
         }
-        public bool RemoveDatapoint(LazyDimension_Datapoint<OutputType> datapoint)
+        public bool RemoveDatapoint(ILazyDatapoint<OutputType> datapoint)
         {
             if (this.pendingDatapoints.Contains(datapoint))
             {
@@ -76,7 +76,7 @@ namespace AdaptiveInterpolation
             else
                 return this.lowerChild;
         }
-        private bool chooseUpperChild(LazyDimension_Datapoint<OutputType> datapoint)
+        private bool chooseUpperChild(ILazyDatapoint<OutputType> datapoint)
         {
             return this.chooseUpperChild(datapoint.GetInputs());
         }
@@ -101,7 +101,7 @@ namespace AdaptiveInterpolation
             int totalNumPoints = this.datapoints.Count + this.pendingDatapoints.Count;
 
             // Now actually add those points and do the split
-            foreach (LazyDimension_Datapoint<OutputType> datapoint in this.pendingDatapoints)
+            foreach (ILazyDatapoint<OutputType> datapoint in this.pendingDatapoints)
             {
                 this.AddPointNowWithoutSplitting(datapoint);
 
@@ -127,7 +127,7 @@ namespace AdaptiveInterpolation
             this.pendingDatapoints.Clear();
         }
 
-        private void AddPointNowWithoutSplitting(LazyDimension_Datapoint<OutputType> newDatapoint)
+        private void AddPointNowWithoutSplitting(ILazyDatapoint<OutputType> newDatapoint)
         {
             // keep track of the outputs we've observed
             this.aggregateOutput = this.outputConverter.Combine(this.aggregateOutput, newDatapoint.GetOutput());
@@ -292,7 +292,7 @@ namespace AdaptiveInterpolation
             double maxInput = double.NegativeInfinity;
             for (int i = firstDatapointIndex; i < lastDatapointIndex; i++)
             {
-                LazyDimension_Datapoint<OutputType> datapoint = this.datapoints[i];
+                ILazyDatapoint<OutputType> datapoint = this.datapoints[i];
                 double input = datapoint.GetInputs().GetInput(dimension);
                 if (input < minInput)
                     minInput = input;
@@ -335,9 +335,9 @@ namespace AdaptiveInterpolation
             //Console.WriteLine("Splitting box at depth " + this.depthFromRoot + " having " + this.datapoints.Count + " points using " + splits.Count + " dimensions");
             this.splits = splits;
 
-            List<LazyDimension_Datapoint<OutputType>> lowerPoints = new List<LazyDimension_Datapoint<OutputType>>();
-            List<LazyDimension_Datapoint<OutputType>> upperPoints = new List<LazyDimension_Datapoint<OutputType>>();
-            foreach (LazyDimension_Datapoint<OutputType> datapoint in this.datapoints)
+            List<ILazyDatapoint<OutputType>> lowerPoints = new List<ILazyDatapoint<OutputType>>();
+            List<ILazyDatapoint<OutputType>> upperPoints = new List<ILazyDatapoint<OutputType>>();
+            foreach (ILazyDatapoint<OutputType> datapoint in this.datapoints)
             {
                 if (chooseUpperChild(datapoint))
                     upperPoints.Add(datapoint);
@@ -392,14 +392,14 @@ namespace AdaptiveInterpolation
             }
         }
 
-        private List<LazyDimension_Datapoint<OutputType>> pendingDatapoints = new List<LazyDimension_Datapoint<OutputType>>();
+        private List<ILazyDatapoint<OutputType>> pendingDatapoints = new List<ILazyDatapoint<OutputType>>();
 
         private List<ThresholdComparison> splits;
 
         private LazyDimension_InterpolatorBox<OutputType> lowerChild;
         private LazyDimension_InterpolatorBox<OutputType> upperChild;
         private OutputType aggregateOutput;
-        private List<LazyDimension_Datapoint<OutputType>> datapoints;
+        private List<ILazyDatapoint<OutputType>> datapoints;
         private int numPointsAtNextSplit = 1;
         private int depthFromRoot;
         INumerifier<OutputType> outputConverter;

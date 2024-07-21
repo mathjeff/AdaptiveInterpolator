@@ -14,7 +14,7 @@ namespace AdaptiveInterpolation
             this.outputConverter = outputConverter;
             this.root = new LazyDimension_InterpolatorBox<OutputType>(outputConverter, 0);
         }
-        public void AddDatapoint(LazyDimension_Datapoint<OutputType> datapoint)
+        public void AddDatapoint(ILazyDatapoint<OutputType> datapoint)
         {
             int numCoordinates = datapoint.GetInputs().GetNumCoordinates();
             if (this.numDimensions < 0)
@@ -26,7 +26,7 @@ namespace AdaptiveInterpolation
             }
             this.root.AddDatapoint(datapoint);
         }
-        public void RemoveDatapoint(LazyDimension_Datapoint<OutputType> datapoint)
+        public void RemoveDatapoint(ILazyDatapoint<OutputType> datapoint)
         {
             this.root.RemoveDatapoint(datapoint);
         }
