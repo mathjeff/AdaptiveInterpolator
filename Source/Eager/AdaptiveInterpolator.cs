@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-// the current version of the AdaptiveLinearInterpolator does a 0th order approximation of the datapoints near the coordinates in question
+// the current version of the AdaptiveInterpolator does a 0th order approximation of the datapoints near the coordinates in question
 // It intelligently determines a reasonable neighborhood of points nearby, and so if any dimensions don't help in certain areas, it won't worry about them
-// Improving it to a 1st order approximation would be a big improvement because it allows the error to drop much faster
+// Improving it to a 1st order approximation could be an improvement because it might allow the error to drop much faster
 namespace AdaptiveInterpolation
 {
-    public class AdaptiveLinearInterpolator<SummaryType>
+    public class AdaptiveInterpolator<SummaryType>
     {
         // SummaryType is the type of object to put in each box (it's a summary of the datapoints that the box represents)
-        public AdaptiveLinearInterpolator(HyperBox<SummaryType> inputBoundary, INumerifier<SummaryType> itemCombiner)
+        public AdaptiveInterpolator(HyperBox<SummaryType> inputBoundary, INumerifier<SummaryType> itemCombiner)
         {
             this.itemCombiner = itemCombiner;
             this.root = new SmartInterpolationBox<SummaryType>(inputBoundary, itemCombiner);
