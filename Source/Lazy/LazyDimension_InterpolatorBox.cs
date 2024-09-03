@@ -233,7 +233,7 @@ namespace AdaptiveInterpolation
                 if (lastDatapointIndexExclusive - numDatapointsToCheck > interestingDatapointIndex)
                 {
                     // If we check the last few datapoints, all the output values will be the same
-                    lastDatapointIndexExclusive = interestingDatapointIndex + 1;
+                    lastDatapointIndexExclusive = interestingDatapointIndex + 2;
                 }
                 int firstDatapointIndex = Math.Max(0, lastDatapointIndexExclusive - numDatapointsToCheck);
 
