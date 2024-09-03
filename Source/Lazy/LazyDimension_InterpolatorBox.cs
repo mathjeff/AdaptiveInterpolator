@@ -24,7 +24,6 @@ namespace AdaptiveInterpolation
         public void AddDatapoint(ILazyDatapoint<OutputType> datapoint)
         {
             this.pendingDatapoints.Add(datapoint);
-            this.numAdditions++;
             // System.Diagnostics.Debug.WriteLine("AddDatapoint in box at depth " + this.depthFromRoot + ", num points = " + this.NumDatapoints + ", num coordinates = " + datapoint.GetInputs().GetNumCoordinates());
         }
         public void AddDatapoints(IEnumerable<ILazyDatapoint<OutputType>> newDatapoints)
@@ -128,6 +127,8 @@ namespace AdaptiveInterpolation
 
         private void AddPointNowWithoutSplitting(ILazyDatapoint<OutputType> newDatapoint)
         {
+            this.numAdditions++;
+
             // keep track of the outputs we've observed
             this.aggregateOutput = this.outputConverter.Combine(this.aggregateOutput, newDatapoint.GetOutput());
 
