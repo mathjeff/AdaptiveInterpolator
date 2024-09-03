@@ -7,7 +7,7 @@ using StatLists;
 // The DistributionAdder class adds and subtracts distributions, to allow for use in Generics
 namespace AdaptiveInterpolation
 {
-    class DistributionAdder : ICombiner<Distribution>
+    public class DistributionAdder : ICombiner<Distribution>, INumerifier<Distribution>
     {
         public Distribution Combine(Distribution d1, Distribution d2)
         {
@@ -16,6 +16,16 @@ namespace AdaptiveInterpolation
         public Distribution Default()
         {
             return Distribution.Zero;
+        }
+
+        public Distribution ConvertToDistribution(Distribution distribution)
+        {
+            return distribution;
+        }
+
+        public Distribution Remove(Distribution sum, Distribution itemToSubtract)
+        {
+            return sum.Minus(itemToSubtract);
         }
 
     }
