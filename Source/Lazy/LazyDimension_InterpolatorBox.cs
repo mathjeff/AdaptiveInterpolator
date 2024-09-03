@@ -193,7 +193,7 @@ namespace AdaptiveInterpolation
             // look for two adjacent datapoints with different outputs
             int interestingDatapointIndex = this.datapoints.Count - 1;
             double lastValue = 0;
-            for (int i = 0; i < maxNumDatapointsToCheck; i++)
+            for (int i = 0; i < this.datapoints.Count; i++)
             {
                 int candidate = this.datapoints.Count - 1 - i;
                 double value = this.outputConverter.ConvertToDistribution(this.datapoints[candidate].GetOutput()).Mean;
