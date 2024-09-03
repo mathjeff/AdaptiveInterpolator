@@ -98,6 +98,7 @@ namespace AdaptiveInterpolation
         // moves any points from the list of pendingPoints into the main list, and updates any stats
         private void ApplyPendingPoints()
         {
+            int eventualNumAdditions = this.numAdditions + this.pendingDatapoints.Count;
             // Now actually add those points and do the split
             foreach (ILazyDatapoint<OutputType> datapoint in this.pendingDatapoints)
             {
@@ -118,7 +119,7 @@ namespace AdaptiveInterpolation
                     this.numAdditionsAtNextSplit = this.RequiredNumAdditionsToSplit(this.numAdditionsAtNextSplit);
 
                     // only actually do the split if this is the last planned split
-                    if (this.numAdditionsAtNextSplit > this.numAdditions)
+                    if (this.numAdditionsAtNextSplit > eventualNumAdditions)
                         this.ConsiderSplitting();
                 }
             }
